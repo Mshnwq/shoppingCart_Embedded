@@ -1,8 +1,10 @@
 #include <Arduino.h>
+// #include <FreeRTOS.h>
+// #include <task.h>
+#include <WiFi.h>
+// #include <WebSocketsServer.h>
 
 /**
- * 
- * 
  * Date: Feb 3, 2023
  * Author: Hayan Al-Machnouk
  */
@@ -14,60 +16,96 @@ static const BaseType_t app_cpu = 0;
 static const BaseType_t app_cpu = 1;
 #endif
 
-// LED rates
-static const int rate_1 = 2000;  // ms
-static const int rate_2 = 1500;  // ms
-
 // Pins
 static const int led_pin = LED_BUILTIN;
+// LED blink rates
+static const int blink_rate = 1000;  // ms
+
+#define WEBSOCKET_PORT 80
+#define WIFI_SSID "stc_wifi_Attar"
+#define WIFI_PASS "0543033373"
+
+// WiFiServer server(WEBSOCKET_PORT);
+// WebSocketsServer webSocket = WebSocketsServer(WEBSOCKET_PORT);
 
 // Our task: blink an LED at one rate
 void toggleLED_1(void *parameter) {
   while(1) {
     digitalWrite(led_pin, HIGH);
-    vTaskDelay(rate_1 / portTICK_PERIOD_MS);
+    vTaskDelay(blink_rate / portTICK_PERIOD_MS);
     digitalWrite(led_pin, LOW);
-    vTaskDelay(rate_1 / portTICK_PERIOD_MS);
+    vTaskDelay(blink_rate / portTICK_PERIOD_MS);
   }
 }
 
-// Our task: blink an LED at another rate
-void toggleLED_2(void *parameter) {
-  while(1) {
+void webSocketProcess(void *pvParameters) {
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  // webSocket.begin();
+  // webSocket.onEvent(onWebSocketEvent);
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  while (true) {
+    // webSocket.loop();
+    // Blink Blue LED if Socket is Active
     digitalWrite(led_pin, HIGH);
-    vTaskDelay(rate_2 / portTICK_PERIOD_MS);
+    vTaskDelay(blink_rate / portTICK_PERIOD_MS);
     digitalWrite(led_pin, LOW);
-    vTaskDelay(rate_2 / portTICK_PERIOD_MS);
+    vTaskDelay(blink_rate / portTICK_PERIOD_MS);
   }
 }
+
+void slaveCtrlTask(void *pvParameters) {
+  // Code for slave control task
+}
+
+void scaleTask(void *pvParameters) {
+  // Code for scale task
+}
+
+void securityTask(void *pvParameters) {
+  // Code for security task
+}
+
+// void onWebSocketEvent(uint8_t client_num, WStype_t type, uint8_t * payload, size_t length) {
+//   switch (type) {
+//     case WStype_DISCONNECTED:
+//       break;
+//     case WStype_CONNECTED:
+//       break;
+//     case WStype_TEXT:
+//       break;
+//   }
+// }
 
 void setup() {
 
-  // Configure pin
+  Serial.begin(115200);
+
+  // Configure pins
   pinMode(led_pin, OUTPUT);
 
-  // Task to run forever
-  xTaskCreatePinnedToCore(  // Use xTaskCreate() in vanilla FreeRTOS
-              toggleLED_1,  // Function to be called
-              "Toggle 1",   // Name of task
-              1024,         // Stack size (bytes in ESP32, words in FreeRTOS)
-              NULL,         // Parameter to pass to function
-              1,            // Task priority (0 to configMAX_PRIORITIES - 1)
-              NULL,         // Task handle
-              app_cpu);     // Run on one core for demo purposes (ESP32 only)
-
-  // Task to run forever
-  xTaskCreatePinnedToCore(  // Use xTaskCreate() in vanilla FreeRTOS
-              toggleLED_2,  // Function to be called
-              "Toggle 2",   // Name of task
-              1024,         // Stack size (bytes in ESP32, words in FreeRTOS)
-              NULL,         // Parameter to pass to function
-              1,            // Task priority (0 to configMAX_PRIORITIES - 1)
-              NULL,         // Task handle
-              app_cpu);     // Run on one core for demo purposes (ESP32 only)
-
-  // If this was vanilla FreeRTOS, you'd want to call vTaskStartScheduler() in
-  // main after setting up your tasks.
+  xTaskCreatePinnedToCore(
+              toggleLED_1,   // Function to be called
+              // webSocketProcess,   // Function to be called
+              "WebSocketProcess", // Name of task
+              1024,               // Stack size in bytes
+              NULL,               // Parameter to pass to function
+              1,                  // Task priority (0 to configMAX_PRIORITIES - 1)
+              NULL,               // Task handle
+              1);                 // core to run on
+  // xTaskCreatePinnedToCore(securityTask, "SecurityTask", 1024, NULL, 1, NULL, 1);
+  // xTaskCreatePinnedToCore(slaveCtrlTask, "SlaveCtrlTask", 1024, NULL, 1, NULL, 1);
+  // xTaskCreatePinnedToCore(scaleTask, "ScaleTask", 1024, NULL, 1, NULL, 1);
 }
 
 void loop() {
