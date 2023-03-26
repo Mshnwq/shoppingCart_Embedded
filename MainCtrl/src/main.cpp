@@ -44,7 +44,7 @@ static const int blink_rate = 2000;  // ms
 
 
 // MQTT broker details
-const char *BROKER = "192.168.172.66";
+const char *BROKER = "192.168.30.66";
 const int BROKER_PORT = 1883;
 const int HTTP_PORT = 1111;
 // const char* USERNAME = "your_mqtt_username"; CURRENTLY NO NEED FOR USERNAME AND PASSWORD
@@ -270,8 +270,10 @@ void scaleTask(void *pvParameters) {
     }
     float db_weight = receivedDoc["weight"];
     float scale_weight;
+    float total =0;
     float comp;
     int count = 0;
+    int motionDetected = 0;
     // Do something with the received data
     for(int i =0 ; i< 100; i++){
       static boolean newDataReady = 0;
@@ -282,25 +284,37 @@ void scaleTask(void *pvParameters) {
       // get smoothed value from the dataset:
       if (newDataReady)
       {
+        // check motion before and after reading
+        float movement1 = checkMovement();
         scale_weight = LoadCell.getData();
-        comp = fabs(db_weight - scale_weight);
-        Serial.printf("Current scale readings: %.2f \n", scale_weight);
-        Serial.printf("Current db_weight: %.2f \n", db_weight);
-        if(comp < 5){
-          break;
+        float movement2 = checkMovement();
+        if (movement1 < 11 && movement2 < 11)
+        {
+          total += scale_weight;
+          count++;
+        }
+        else
+        {
+          motionDetected++;
         }
       }else
       {
         Serial.println("No data available at ADC.");
       };
-      vTaskDelay(5 / portTICK_PERIOD_MS);
+      vTaskDelay(1 / portTICK_PERIOD_MS);
     }
     
     StaticJsonDocument<256> pub;
     pub["mqtt_type"] = "scale_confirmation";
     pub["sender"] = "cart-1";
     pub["item_barcode"] = receivedDoc["item_barcode"];
+    float avg = total/count;
+    comp = fabs(db_weight - avg);
+    Serial.printf("Current scale readings: %.2f \n", avg);
+    Serial.printf("Current db_weight: %.2f \n", db_weight);
     Serial.printf("Result: %.2f\n", comp);
+    if(motionDetected > 0);
+      Serial.println("Motion detected during measurement, readings may be inaccurate!");
     if(comp <= 5){
       // Create a JSON object
        pub["status"] = "pass";
@@ -506,14 +520,14 @@ void setup() {
       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
       NULL,        // Task handle
       1);                  // Run on one core for demo purposes (ESP32 only)
-  xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
-      mpuTask,             // Function to be called
-      "accelometer",       // Name of task
-      4096,                // Stack size (bytes in ESP32, words in FreeRTOS)
-      NULL,                // Parameter to pass to function
-      1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
-      NULL,                // Task handle
-      1);                  // Run on one core for demo purposes (ESP32 only)
+  // xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
+  //     mpuTask,             // Function to be called
+  //     "accelometer",       // Name of task
+  //     4096,                // Stack size (bytes in ESP32, words in FreeRTOS)
+  //     NULL,                // Parameter to pass to function
+  //     1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
+  //     NULL,                // Task handle
+  //     1);                  // Run on one core for demo purposes (ESP32 only)
   }
 
 void loop() {

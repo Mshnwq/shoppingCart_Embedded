@@ -23,18 +23,19 @@ boolean mpuSetup(){
     return true;
 }
 
-void checkMovement(){
+float checkMovement(){
     sensors_event_t accel_event;
     sensors_event_t gyro_event;
     sensors_event_t temp_event;
     mpu.getEvent(&accel_event, &gyro_event, &temp_event);
 
     float accel_magnitude = sqrt(accel_event.acceleration.x * accel_event.acceleration.x + accel_event.acceleration.y * accel_event.acceleration.y + accel_event.acceleration.z * accel_event.acceleration.z);
-    Serial.print("Acceleration Magnitude: ");
-    Serial.println(accel_magnitude);
+    // Serial.print("Acceleration Magnitude: ");
+    // Serial.println(accel_magnitude);
 
-    if (accel_magnitude > 10)
-    {
-        Serial.println("Movement detected!");
-    }
+    // if (accel_magnitude > 10)
+    // {
+    //     Serial.println("Movement detected!");
+    // }
+    return accel_magnitude;
 }

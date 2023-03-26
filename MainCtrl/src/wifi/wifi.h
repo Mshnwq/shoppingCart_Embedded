@@ -4,8 +4,8 @@
 // #define WIFI_SSID "-"
 // #define WIFI_PASS "-"
 
-#define WIFI_SSID "FPT_132"
-#define WIFI_PASS "tast6095"
+#define WIFI_SSID ""
+#define WIFI_PASS ""
 
 // WiFi and MQTT objects
 extern WiFiClient wifiClient;
