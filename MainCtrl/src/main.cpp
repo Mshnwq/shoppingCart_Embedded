@@ -9,6 +9,7 @@
 // #include <WebSocketsClient.h>
 #include <PubSubClient.h>       // MQTT client
 #include <cstdlib>
+#include <string>
 #include <ctime>
 #include <cmath>
 #include <iostream>
@@ -17,6 +18,11 @@
 #include "scale/main.h"
 #include "wifi/wifi.h"
 #include "accelerometer/acc.h"
+#include "helper.h"
+#include "lock/lock.h"
+
+using namespace std;
+
 // Use only core 1 for demo purposes
 // #if CONFIG_FREERTOS_UNICORE
 // static const BaseType_t app_cpu = 0;
@@ -25,12 +31,16 @@
 // #endif
 
 // Task Handles
-// TaskHandle_t websocketHandle; commented due to unused 
-TaskHandle_t slaveHandle;
-TaskHandle_t scrtyHandle;
+TaskHandle_t colecHandle;
+TaskHandle_t penetHandle;
+TaskHandle_t breakHandle;
+TaskHandle_t alarmHandle;
 TaskHandle_t scaleHandle;
+TaskHandle_t resetHandle;
+TaskHandle_t mpuHandle;
 // Create a handle for the queue
-QueueHandle_t xQueue;
+QueueHandle_t xQueuePenet;
+QueueHandle_t xQueueScale;
 
 int DOUT_PIN = 16; // mcu > HX711 dout pin
 int SCK_PIN = 17;
@@ -44,11 +54,10 @@ static const int blink_rate = 2000;  // ms
 
 
 // MQTT broker details
-const char *BROKER = "192.168.30.66";
+// const char *BROKER = "192.168.30.66";
+const char *BROKER = "192.168.137.109";
 const int BROKER_PORT = 1883;
 const int HTTP_PORT = 1111;
-// const char* USERNAME = "your_mqtt_username"; CURRENTLY NO NEED FOR USERNAME AND PASSWORD
-// const char* PASSWORD = "your_mqtt_password";
 
 // MQTT topics
 // not nown by default need to hit http request in order to authenticate
@@ -56,6 +65,7 @@ char *TOPIC_PUB = new char[63];
 char *TOPIC_SUB = new char[63];
 HttpClient httpClient = HttpClient(wifiClient, BROKER, HTTP_PORT); // http client
 PubSubClient mqttClient(wifiClient); // mqttt client
+
 // HX711 constructor:
 HX711_ADC LoadCell(DOUT_PIN, SCK_PIN);
 
@@ -70,183 +80,22 @@ float scaleReading = 0;
 StaticJsonDocument<256> docBuf;
 
 
-
-// Scale parameters
-float currentWeight = 0;
-
-enum taskModes {
-  LOCKED,
-  INITIAL,
-  ACTIVE,
-  WEIGHING,
-  ALARM,
-  ERROR,
-  ABANDONED,
-  PAID,
-};
-
-// RTOS
-taskModes currentMode = LOCKED;
-taskModes lastMode = INITIAL;
-
-// Our task: blink an LED at one rate
-void toggleLED_1(void *parameter) {
-  while(1) {
-    digitalWrite(led_pin, HIGH);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-    digitalWrite(led_pin, LOW);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-
-    if (digitalRead(ctrl_pin) == HIGH) {
-      printf("SUSPENDING\n");
-      vTaskSuspend(scaleHandle);
-      vTaskSuspend(slaveHandle);
-    } else {
-      printf("RESUMING\n");
-      vTaskResume(scaleHandle);
-      vTaskResume(slaveHandle);
-    }
-  }
-}
-
-// void onWebSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
-//   switch (type) {
-//     case WStype_DISCONNECTED:
-//       break;
-//     case WStype_CONNECTED:
-//       break;
-//     case WStype_TEXT:
-//       // Update the state based on the received message
-//       switch (payload[0]) { // TODO PROTOCOL
-//         case '0':
-//           break;
-//         case '1':
-//           currentMode = LOCKED;
-//           break;
-//         case '2':
-//           currentMode = ACTIVE;
-//           break;
-//         case '3':
-//           currentMode = ALARM;
-//           break;
-//         case '4':
-//           currentMode = WEIGHING;
-//           break;
-//         case '5':
-//           currentMode = PAID;
-//           break;
-//         case '6':
-//           currentMode = LOCKED;
-//           break;
-//     }
-//   }
-// }
-
-// void webSocketProcess(void *pvParameters) {
-//   // Initialize WiFi
-//   WiFi.mode(WIFI_STA);
-//   WiFi.begin(WIFI_SSID, WIFI_PASS);
-
-//   while (WiFi.status() != WL_CONNECTED) {
-//     delay(1000);
-//     Serial.print(".");
-//     // Serial.print("Heap remaining WIFI (words): ");
-//     // Serial.println(uxTaskGetStackHighWaterMark(NULL));
-
-//     // Serial.print("Heap before WIFI (words): ");
-//     // Serial.println(xPortGetFreeHeapSize());
-//   }
-
-
-//   // Address, Port, and URL path 
-//   webSocket.begin(WEBSOCKET_ADDRESS, WEBSOCKET_PORT, "/ws/555");
-//   // AebSocket event handler
-//   webSocket.onEvent(onWebSocketEvent);
-//   // if connection failed retry every 5s
-//   webSocket.setReconnectInterval(5000);
-
-//   Serial.println("");
-//   Serial.println("Socket connected");
-//   Serial.print("at Port: ");
-//   Serial.println(WEBSOCKET_PORT);
-
-//   while (true) {
-//     webSocket.loop();
-//     // Blink Blue LED if Socket is Active
-//     digitalWrite(led_pin, HIGH);
-//     vTaskDelay(blink_rate / portTICK_PERIOD_MS);
-//     digitalWrite(led_pin, LOW);
-//     vTaskDelay(blink_rate / portTICK_PERIOD_MS);
-
-//     // Serial.print("Heap remaining WIFI (words): ");
-//     // Serial.println(uxTaskGetStackHighWaterMark(NULL));
-
-//     // Serial.print("Heap after WIFI (words): ");
-//     // Serial.println(xPortGetFreeHeapSize());
-    
-//     Serial.print("Current mode: ");
-//     Serial.println(currentMode);
-
-//     if (lastMode != currentMode) {
-//       Serial.print("Update mode");
-//       switch (currentMode) {
-//         case LOCKED:
-//           // locked tasks
-//           vTaskSuspend(scaleHandle);
-//           vTaskSuspend(slaveHandle);
-//           vTaskResume(scrtyHandle);
-//           break;
-//         case INITIAL:
-//           // initial tasks
-//           vTaskSuspend(scaleHandle);
-//           vTaskSuspend(slaveHandle);
-//           vTaskSuspend(scrtyHandle);
-//           break;
-//         case ALARM:
-//         // alarm tasks
-//           vTaskResume(scrtyHandle);
-//           break;
-//         case ACTIVE:
-//           // active tasks
-//           vTaskSuspend(scaleHandle);
-//           vTaskResume (slaveHandle);
-//           break;
-//         case ERROR:
-//           break;
-//         case WEIGHING:
-//           // weighing tasks
-//           vTaskResume(scaleHandle);
-//           vTaskResume(slaveHandle);
-//           vTaskResume(scrtyHandle);
-//           break;
-//         case ABANDONED:
-//           break;
-//         case PAID:
-//           // paid tasks
-//           vTaskSuspend(scaleHandle);
-//           vTaskResume(slaveHandle);
-//           break;
-//       }
-//       lastMode = currentMode;
-//       Serial.print("Last mode: ");
-//       Serial.println(lastMode);
-//     }
-//   }
-// }
-
-void slaveCtrlTask(void *pvParameters) {
+void pentTask(void *pvParameters) {
   // Code for slave control task
-  while (true)
-  {
-    /* code */ // TODO Penetration
-    printf("SLAVE\n");
-    digitalWrite(led_red, HIGH);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-    digitalWrite(led_red, LOW);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-  }
+  // while (true)
+  // {
+  //   int myArray[10] = {0,0,0,1,0,0,0,0,0};
+  //   // Convert the array to a string representation
+  //   String arrayStr;
+  //   for (int i = 0; i < sizeof(myArray) / sizeof(int); i++)
+  //   {
+  //     arrayStr += to_string(myArray[i]) + " ";
+  //   }
+  //   // send data to mqtt server
+  //   // mqtt_type: pent_data
+  //   mqttClient.publish(TOPIC_PUB, data);
+  //   vTaskDelay(1000/ portTICK_PERIOD_MS);
+  // }
 }
 
 void scaleTask(void *pvParameters) {
@@ -255,9 +104,10 @@ void scaleTask(void *pvParameters) {
   while (true)
   {
     // Wait for data to be received from the queue
-
-    if (xQueueReceive(xQueue, &receivedDoc, portMAX_DELAY) == pdPASS)
+    if (xQueueReceive(xQueueScale, &receivedDoc, portMAX_DELAY) == pdPASS)
     {
+      pinMode(2, OUTPUT);
+      activateLock();
       // Data received successfully
       Serial.print("Received data: ");
       serializeJson(receivedDoc, Serial);
@@ -308,14 +158,22 @@ void scaleTask(void *pvParameters) {
     pub["mqtt_type"] = "scale_confirmation";
     pub["sender"] = "cart-1";
     pub["item_barcode"] = receivedDoc["item_barcode"];
+    pub["process"] = receivedDoc["process"];
     float avg = total/count;
     comp = fabs(db_weight - avg);
     Serial.printf("Current scale readings: %.2f \n", avg);
     Serial.printf("Current db_weight: %.2f \n", db_weight);
     Serial.printf("Result: %.2f\n", comp);
-    if(motionDetected > 0);
-      Serial.println("Motion detected during measurement, readings may be inaccurate!");
-    if(comp <= 5){
+    if(motionDetected >= 3){
+      pub["status"] = "acce_fail";
+      // Serialize the JSON object to a string
+      String jsonString;
+      serializeJson(pub, jsonString);
+      const char *myChar = jsonString.c_str();
+      mqttClient.publish(TOPIC_PUB, myChar);
+      Serial.println("send pass to mqtt");
+    }
+    else if(comp <= 5){
       // Create a JSON object
        pub["status"] = "pass";
        // Serialize the JSON object to a string
@@ -324,7 +182,9 @@ void scaleTask(void *pvParameters) {
        const char *myChar = jsonString.c_str();
        mqttClient.publish(TOPIC_PUB, myChar);
        Serial.println("send pass to mqtt");
-    }else{
+    }
+    else
+    {
        // Create a JSON object
        pub["status"] = "fail";
        // Serialize the JSON object to a string
@@ -334,15 +194,27 @@ void scaleTask(void *pvParameters) {
        mqttClient.publish(TOPIC_PUB, myChar);
        Serial.println("send fail to mqtt");
     }
+    deactivateLock();
   }
 }
 
-void securityTask(void *pvParameters) {
-  // Code for security task
+void alarmTask(void *pvParameters) {
+  // Code for alarm task
   while (true)
   {
     /* code */ // TODO security protocol
-    printf("SECURITY\n");
+    printf("ALARM\n");
+    vTaskDelay(blink_rate*5 / portTICK_PERIOD_MS);
+  }
+  
+}
+
+void breakTask(void *pvParameters) {
+  // Code for break task
+  while (true)
+  {
+    /* code */ // TODO security protocol
+    printf("BREAKS\n");
     vTaskDelay(blink_rate*5 / portTICK_PERIOD_MS);
   }
   
@@ -366,16 +238,7 @@ void mqtt(void *parameter)
   }
 }
 
-// MQTT TASK: keep connection alive with mqtt broker
-void mpuTask(void *parameter)
-{
-  while (1)
-  {
-    checkMovement();
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
-}
-
+// Scale update HX registers
 void scaleUpdate(void *arameter){
   while(1){
     static boolean newDataReady = 0;
@@ -391,6 +254,7 @@ void scaleUpdate(void *arameter){
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
+
 // callback function for receiving MQTT messages
 void mqttCallback(char *topic, byte *payload, unsigned int length)
 {
@@ -413,28 +277,33 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
   }
   const char *mqtt_type = docBuf["mqtt_type"]; // Assuming the payload contains a field named "message"
 
-  if(strcmp(mqtt_type, "check_weight") == 0){
+  if (strcmp(mqtt_type, "check_weight") == 0) {
     const float actual_weight = docBuf["weight"];
-    xQueueSend(xQueue, &docBuf, 0);
+    // resum tasks incase update failed
+    // vTaskResume(resetHandle);
+    // vTaskResume(mpuHandle); 
+    xQueueSend(xQueueScale, &docBuf, 0);
   }
-}
+  if (strcmp(mqtt_type, "update_mode") == 0) {
+      int mode = docBuf["mode"];
+      updateMode(mode);
+    }
+  }
 
 // Create an instance of the SerialDebug library
 void setup() {
 
   Serial.begin(9600);
-  // Configure pins
-  // pinMode(led_pin, OUTPUT);
-  // pinMode(led_red, OUTPUT);
-  // pinMode(led_blu, OUTPUT);
-  // pinMode(ctrl_pin, INPUT);
-
+  Serial.printf("CurrentMode: %d\n", currentMode);
+  updateMode(1);
+  Serial.printf("New mode: %d\n", currentMode);
+  updateMode(0); // set cart mode to Locked
   wifiSetup(); // connect to wifi
   mpuSetup();
   scaleSetup(); // scale setup
 
   // Connect Cart to the Backend using HTTP request
-  httpClient.get("/api/v1/cart/start_cart/MuoHgSPyqIlr71w0ooqkhbLFhJalZry4KjYXgM0XxvUknuwRE2WrHw2o");
+  httpClient.get("/api/v1/cart/start_cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco");
 
   // read the status code and body of the response
   int statusCode = httpClient.responseStatusCode();
@@ -479,23 +348,17 @@ void setup() {
       delay(1000);
     }
   }
-  // xTaskCreatePinnedToCore(
-  //     toggleLED_1, // Function to be called
-  //     // webSocketProcess,   // Function to be called
-  //     "WebSocketProcess", // Name of task
-  //     4096,               // Stack size in bytes
-  //     NULL,               // Parameter to pass to function
-  //     1,                  // Task priority (0 to configMAX_PRIORITIES - 1)
-  //     NULL,   // Task handle
-  //     0);                 // core to run on
-  // xTaskCreatePinnedToCore(slaveCtrlTask, "SlaveCtrlTask", 2048, NULL, 1, &slaveHandle, 1);
-  // xTaskCreatePinnedToCore(securityTask, "SecurityTask", 2048, NULL, 1, &scrtyHandle, 1);
-  // xTaskCreatePinnedToCore(scaleTask, "ScaleTask", 2048, NULL, 1, &scaleHandle, 1);
-  // Task to run forever
+  // xTaskCreatePinnedToCore(mqtt, "Mqtt client", 4096, NULL, 1, NULL, 1);
+  // xTaskCreatePinnedToCore(mpuTask, "Accelerometer Task", 4096, NULL, 1, &mpuHandle, 1);
+  // xTaskCreatePinnedToCore(breakTask, "Break Task", 1024, NULL, 1, &breakHandle, 1);
+  // xTaskCreatePinnedToCore(scaleTask, "Scale Task", 4096, NULL, 1, &scaleHandle, 1);
+  // xTaskCreatePinnedToCore(alarmTask, "Alarm Task", 1024, NULL, 1, &alarmHandle, 1);
+  // xTaskCreatePinnedToCore(scaleUpdate, "Reset Scale Registires by update", 1024, NULL, 1, &resetHandle, 1);
 
   // Create the queue with a capacity of 10 integers
-  xQueue = xQueueCreate(1, sizeof(StaticJsonDocument<256>));
+  xQueueScale = xQueueCreate(1, sizeof(StaticJsonDocument<256>));
 
+  // xTaskCreatePinnedToCore(pentTask, "penteration sending", 1024, NULL, 1, &penetHandle, 1);
   xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
       mqtt,                // Function to be called
       "Mqtt client",       // Name of task
@@ -518,7 +381,7 @@ void setup() {
       1024,                // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,                // Parameter to pass to function
       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
-      NULL,        // Task handle
+      &resetHandle,        // Task handle
       1);                  // Run on one core for demo purposes (ESP32 only)
   // xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
   //     mpuTask,             // Function to be called
@@ -530,6 +393,7 @@ void setup() {
   //     1);                  // Run on one core for demo purposes (ESP32 only)
   }
 
+// Task to run forever
 void loop() {
   // Do nothing
   // setup() and loop() run in their own task with priority 1 in core 1
