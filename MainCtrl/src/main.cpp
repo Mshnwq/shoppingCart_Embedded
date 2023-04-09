@@ -55,7 +55,7 @@ static const int blink_rate = 2000;  // ms
 
 // MQTT broker details
 // const char *BROKER = "192.168.30.66";
-const char *BROKER = "192.168.137.109";
+const char *BROKER = "192.168.90.66";
 const int BROKER_PORT = 1883;
 const int HTTP_PORT = 1111;
 
@@ -106,8 +106,6 @@ void scaleTask(void *pvParameters) {
     // Wait for data to be received from the queue
     if (xQueueReceive(xQueueScale, &receivedDoc, portMAX_DELAY) == pdPASS)
     {
-      pinMode(2, OUTPUT);
-      activateLock();
       // Data received successfully
       Serial.print("Received data: ");
       serializeJson(receivedDoc, Serial);
@@ -194,7 +192,6 @@ void scaleTask(void *pvParameters) {
        mqttClient.publish(TOPIC_PUB, myChar);
        Serial.println("send fail to mqtt");
     }
-    deactivateLock();
   }
 }
 
@@ -219,6 +216,23 @@ void breakTask(void *pvParameters) {
   }
   
 }
+void penetration(void *pvParameters)
+{
+  // Code for break task
+  while (true)
+  {
+    StaticJsonDocument<256> pube;
+    pube["mqtt_type"] = "penetration_data";
+    pube["sender"] = "cart-1";
+       // Serialize the JSON object to a string
+       String jsonString;
+       serializeJson(pube, jsonString);
+       const char *myChar = jsonString.c_str();
+       Serial.println(mqttClient.publish(TOPIC_PUB, myChar));
+       Serial.println("Published data!");
+       vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
 
 // MQTT TASK: keep connection alive with mqtt broker
 void mqtt(void *parameter)
@@ -229,12 +243,8 @@ void mqtt(void *parameter)
     mqttClient.loop();
     // Serial.println("Mqtt connection is alive!");
 
-    // publish a message to the MQTT broker
-    // mqttClient.publish(TOPIC_PUB, "Hello, MQTT!");
-    // Serial.println("sent new message!");
-
     // wait for a few seconds
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
   }
 }
 
@@ -258,16 +268,16 @@ void scaleUpdate(void *arameter){
 // callback function for receiving MQTT messages
 void mqttCallback(char *topic, byte *payload, unsigned int length)
 {
-  Serial.print("Message received [");
-  Serial.print(topic);
-  Serial.print("]: ");
+  // Serial.print("Message received [");
+  // Serial.print(topic);
+  // Serial.print("]: ");
 
-  for (int i = 0; i < length; i++)
-  {
-    Serial.print((char)payload[i]);
-  }
+  // for (int i = 0; i < length; i++)
+  // {
+  //   Serial.print((char)payload[i]);
+  // }
 
-  Serial.println();
+  // Serial.println();
   DeserializationError error = deserializeJson(docBuf, payload, length);
   if (error)
   {
@@ -288,6 +298,12 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       int mode = docBuf["mode"];
       updateMode(mode);
     }
+    if (strcmp(mqtt_type, "alarm_detection") == 0)
+    {
+      boolean alarm = docBuf["trigger"];
+      if(alarm)
+        updateMode(4);
+    }
   }
 
 // Create an instance of the SerialDebug library
@@ -295,12 +311,14 @@ void setup() {
 
   Serial.begin(9600);
   Serial.printf("CurrentMode: %d\n", currentMode);
-  updateMode(1);
+  // updateMode(1);
+  pinMode(26, OUTPUT);
+  pinMode(27, OUTPUT);
   Serial.printf("New mode: %d\n", currentMode);
-  updateMode(0); // set cart mode to Locked
+  // updateMode(0); // set cart mode to Locked
   wifiSetup(); // connect to wifi
-  mpuSetup();
-  scaleSetup(); // scale setup
+  // mpuSetup();
+  // scaleSetup(); // scale setup
 
   // Connect Cart to the Backend using HTTP request
   httpClient.get("/api/v1/cart/start_cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco");
@@ -367,6 +385,14 @@ void setup() {
       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
       NULL,                // Task handle
       1);            // Run on one core for demo purposes (ESP32 only)
+  xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
+       penetration,                // Function to be called
+       "Mqtt client",       // Name of task
+       4096,                // Stack size (bytes in ESP32, words in FreeRTOS)
+       NULL,                // Parameter to pass to function
+       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
+       NULL,                // Task handle
+       1);                  // Run on one core for demo purposes (ESP32 only)
   xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
       scaleTask,                // Function to be called
       "Scale Task",       // Name of task

@@ -4,8 +4,8 @@
 int lastMode = 0;
 int currentMode = 0;
 int updateMode(int newMode){
-    if(lastMode == currentMode)
-      return -1;
+    // if(lastMode == currentMode)
+    //   return -1;
     lastMode = currentMode;
     currentMode = newMode;
     enableModeTasks(newMode);
@@ -28,8 +28,8 @@ void enableModeTasks(int mode){
         // vTaskSuspend(scaleHandle);
         // vTaskSuspend(alarmHandle);
         // vTaskSuspend(mpuHandle);
-        vTaskResume(penetHandle);
-        deactivateLock();
+        // vTaskResume(penetHandle);
+        deactivateLockWithBuz();
         break;
       case 2:
         // weighing tasks
@@ -40,7 +40,7 @@ void enableModeTasks(int mode){
         break;
       case 4:
         // alarm tasks
-        // vTaskResume(scrtyHandle);
+        activateLockWithBuz();
         break;
       case 5:
         

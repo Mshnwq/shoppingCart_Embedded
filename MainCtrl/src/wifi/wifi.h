@@ -6,11 +6,12 @@
 
 // #define WIFI_SSID "FPT"
 // #define WIFI_PASS "g>66640C"
-#define WIFI_SSID "Faisal"
-#define WIFI_PASS "123456788"
+#define WIFI_SSID "FPT_132"
+#define WIFI_PASS "tast6095"
 
 // WiFi and MQTT objects
 extern WiFiClient wifiClient;
 
 boolean wifiSetup();
+void reconnect(void *pvParameters);
 #endif
