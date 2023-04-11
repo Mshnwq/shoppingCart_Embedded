@@ -4,6 +4,8 @@
 // #define WIFI_SSID "-"
 // #define WIFI_PASS "-"
 
+// #define WIFI_SSID "FPT"
+// #define WIFI_PASS "g>66640C"
 #define WIFI_SSID "FPT_132"
 #define WIFI_PASS "tast6095"
 
@@ -11,4 +13,5 @@
 extern WiFiClient wifiClient;
 
 boolean wifiSetup();
+void reconnect(void *pvParameters);
 #endif

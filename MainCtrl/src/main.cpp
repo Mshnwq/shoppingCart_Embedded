@@ -9,6 +9,7 @@
 // #include <WebSocketsClient.h>
 #include <PubSubClient.h>       // MQTT client
 #include <cstdlib>
+#include <string>
 #include <ctime>
 #include <cmath>
 #include <iostream>
@@ -17,6 +18,11 @@
 #include "scale/main.h"
 #include "wifi/wifi.h"
 #include "accelerometer/acc.h"
+#include "helper.h"
+#include "lock/lock.h"
+
+using namespace std;
+
 // Use only core 1 for demo purposes
 // #if CONFIG_FREERTOS_UNICORE
 // static const BaseType_t app_cpu = 0;
@@ -36,8 +42,8 @@ TaskHandle_t mpuHandle;
 QueueHandle_t xQueuePenet;
 QueueHandle_t xQueueScale;
 
-static const int DOUT_PIN = 16; // mcu > HX711 dout pin
-static const int SCK_PIN = 17;
+int DOUT_PIN = 16; // mcu > HX711 dout pin
+int SCK_PIN = 17;
 // LED Pin
 static const int led_red = 12;
 static const int led_blu = 14;
@@ -48,7 +54,8 @@ static const int blink_rate = 2000;  // ms
 
 
 // MQTT broker details
-const char *BROKER = "192.168.172.66";
+// const char *BROKER = "192.168.30.66";
+const char *BROKER = "192.168.90.66";
 const int BROKER_PORT = 1883;
 const int HTTP_PORT = 1111;
 
@@ -72,46 +79,23 @@ float scaleReading = 0;
 // global buffer for xqueue data exchance
 StaticJsonDocument<256> docBuf;
 
-// Scale parameters
-float currentWeight = 0;
 
-// Task modes
-lastMode;
-currentMode;
-
-// Our task: blink an LED at one rate
-void toggleLED_1(void *parameter) {
-  while(1) {
-    digitalWrite(led_pin, HIGH);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-    digitalWrite(led_pin, LOW);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-
-    if (digitalRead(ctrl_pin) == HIGH) {
-      printf("SUSPENDING\n");
-      vTaskSuspend(scaleHandle);
-      vTaskSuspend(slaveHandle);
-    } else {
-      printf("RESUMING\n");
-      vTaskResume(scaleHandle);
-      vTaskResume(slaveHandle);
-    }
-  }
-}
-
-void slaveCtrlTask(void *pvParameters) {
+void pentTask(void *pvParameters) {
   // Code for slave control task
-  while (true)
-  {
-    /* code */ // TODO Penetration
-    printf("SLAVE\n");
-    digitalWrite(led_red, HIGH);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-    digitalWrite(led_red, LOW);
-    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-  }
+  // while (true)
+  // {
+  //   int myArray[10] = {0,0,0,1,0,0,0,0,0};
+  //   // Convert the array to a string representation
+  //   String arrayStr;
+  //   for (int i = 0; i < sizeof(myArray) / sizeof(int); i++)
+  //   {
+  //     arrayStr += to_string(myArray[i]) + " ";
+  //   }
+  //   // send data to mqtt server
+  //   // mqtt_type: pent_data
+  //   mqttClient.publish(TOPIC_PUB, data);
+  //   vTaskDelay(1000/ portTICK_PERIOD_MS);
+  // }
 }
 
 void scaleTask(void *pvParameters) {
@@ -134,8 +118,10 @@ void scaleTask(void *pvParameters) {
     }
     float db_weight = receivedDoc["weight"];
     float scale_weight;
+    float total =0;
     float comp;
     int count = 0;
+    int motionDetected = 0;
     // Do something with the received data
     for(int i =0 ; i< 100; i++){
       static boolean newDataReady = 0;
@@ -146,26 +132,46 @@ void scaleTask(void *pvParameters) {
       // get smoothed value from the dataset:
       if (newDataReady)
       {
+        // check motion before and after reading
+        float movement1 = checkMovement();
         scale_weight = LoadCell.getData();
-        comp = fabs(db_weight - scale_weight);
-        Serial.printf("Current scale readings: %.2f \n", scale_weight);
-        Serial.printf("Current db_weight: %.2f \n", db_weight);
-        if(comp < 5){
-          break;
+        float movement2 = checkMovement();
+        if (movement1 < 11 && movement2 < 11)
+        {
+          total += scale_weight;
+          count++;
+        }
+        else
+        {
+          motionDetected++;
         }
       }else
       {
         Serial.println("No data available at ADC.");
       };
-      vTaskDelay(5 / portTICK_PERIOD_MS);
+      vTaskDelay(1 / portTICK_PERIOD_MS);
     }
     
     StaticJsonDocument<256> pub;
     pub["mqtt_type"] = "scale_confirmation";
     pub["sender"] = "cart-1";
     pub["item_barcode"] = receivedDoc["item_barcode"];
+    pub["process"] = receivedDoc["process"];
+    float avg = total/count;
+    comp = fabs(db_weight - avg);
+    Serial.printf("Current scale readings: %.2f \n", avg);
+    Serial.printf("Current db_weight: %.2f \n", db_weight);
     Serial.printf("Result: %.2f\n", comp);
-    if(comp <= 5) {
+    if(motionDetected >= 3){
+      pub["status"] = "acce_fail";
+      // Serialize the JSON object to a string
+      String jsonString;
+      serializeJson(pub, jsonString);
+      const char *myChar = jsonString.c_str();
+      mqttClient.publish(TOPIC_PUB, myChar);
+      Serial.println("send pass to mqtt");
+    }
+    else if(comp <= 5){
       // Create a JSON object
        pub["status"] = "pass";
        // Serialize the JSON object to a string
@@ -210,6 +216,23 @@ void breakTask(void *pvParameters) {
   }
   
 }
+void penetration(void *pvParameters)
+{
+  // Code for break task
+  while (true)
+  {
+    StaticJsonDocument<256> pube;
+    pube["mqtt_type"] = "penetration_data";
+    pube["sender"] = "cart-1";
+       // Serialize the JSON object to a string
+       String jsonString;
+       serializeJson(pube, jsonString);
+       const char *myChar = jsonString.c_str();
+       Serial.println(mqttClient.publish(TOPIC_PUB, myChar));
+       Serial.println("Published data!");
+       vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
 
 // MQTT TASK: keep connection alive with mqtt broker
 void mqtt(void *parameter)
@@ -220,22 +243,8 @@ void mqtt(void *parameter)
     mqttClient.loop();
     // Serial.println("Mqtt connection is alive!");
 
-    // publish a message to the MQTT broker
-    // mqttClient.publish(TOPIC_PUB, "Hello, MQTT!");
-    // Serial.println("sent new message!");
-
     // wait for a few seconds
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
-}
-
-// MPU TASK: Accelerometer task
-void mpuTask(void *parameter)
-{
-  while (1)
-  {
-    checkMovement();
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
   }
 }
 
@@ -259,16 +268,16 @@ void scaleUpdate(void *arameter){
 // callback function for receiving MQTT messages
 void mqttCallback(char *topic, byte *payload, unsigned int length)
 {
-  Serial.print("Message received [");
-  Serial.print(topic);
-  Serial.print("]: ");
+  // Serial.print("Message received [");
+  // Serial.print(topic);
+  // Serial.print("]: ");
 
-  for (int i = 0; i < length; i++)
-  {
-    Serial.print((char)payload[i]);
-  }
+  // for (int i = 0; i < length; i++)
+  // {
+  //   Serial.print((char)payload[i]);
+  // }
 
-  Serial.println();
+  // Serial.println();
   DeserializationError error = deserializeJson(docBuf, payload, length);
   if (error)
   {
@@ -280,92 +289,39 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
 
   if (strcmp(mqtt_type, "check_weight") == 0) {
     const float actual_weight = docBuf["weight"];
-    .// resum tasks incase update failed
-    vTaskResume(resetHandle);
-    vTaskResume(mpuHandle); 
+    // resum tasks incase update failed
+    // vTaskResume(resetHandle);
+    // vTaskResume(mpuHandle); 
     xQueueSend(xQueueScale, &docBuf, 0);
   }
   if (strcmp(mqtt_type, "update_mode") == 0) {
-    // update current
-    currentMode = mqtt_type
-    if (lastMode != currentMode) {
-        Serial.print("Update mode");
-        switch (currentMode) {
-          case LOCKED:
-            // locked tasks
-            vTaskSuspend(scaleHandle);
-            vTaskSuspend(alarmHandle);
-            vTaskSuspend(penetHandle);
-            vTaskSuspend(resetHandle);
-            vTaskSuspend(mpuHandle);
-            vTaskResume(breakHandle);
-            break;
-          case ALARM:
-            // alarm tasks
-            vTaskResume(scrtyHandle);
-            break;
-          case ACTIVE:
-            // active tasks
-            vTaskSuspend(resetHandle);
-            vTaskSuspend(scaleHandle);
-            vTaskSuspend(alarmHandle);
-            vTaskSuspend(breakHandle);
-            vTaskSuspend(mpuHandle);
-            vTaskResume(penetHandle);
-            break;
-          case ERROR:
-            break;
-          case WEIGHING:
-            // weighing tasks
-            vTaskResume(breakHandle);
-            vTaskResume(resetHandle);
-            vTaskResume(mpuHandle);
-            vTaskResume(penetHandle);
-            break;
-          case ABANDONED:
-            // paid tasks 
-            vTaskSuspend(resetHandle);
-            vTaskSuspend(scaleHandle);
-            vTaskSuspend(breakHandle);
-            vTaskSuspend(alarmHandle);
-            vTaskSuspend(resetHandle);
-            vTaskSuspend(mpuHandle);
-            vTaskResume(breakHandle);
-            break;
-          case PAID:
-            // paid tasks
-            vTaskSuspend(resetHandle);
-            vTaskSuspend(scaleHandle);
-            vTaskSuspend(breakHandle);
-            vTaskSuspend(alarmHandle);
-            vTaskSuspend(resetHandle);
-            vTaskSuspend(mpuHandle);
-            vTaskResume(penetHandle);
-            break;
-        }
-      lastMode = currentMode;
-      Serial.print("Last mode: ");
-      Serial.println(lastMode);
+      int mode = docBuf["mode"];
+      updateMode(mode);
+    }
+    if (strcmp(mqtt_type, "alarm_detection") == 0)
+    {
+      boolean alarm = docBuf["trigger"];
+      if(alarm)
+        updateMode(4);
     }
   }
-}
 
 // Create an instance of the SerialDebug library
 void setup() {
 
   Serial.begin(9600);
-  // Configure pins
-  // pinMode(led_pin, OUTPUT);
-  // pinMode(led_red, OUTPUT);
-  // pinMode(led_blu, OUTPUT);
-  // pinMode(ctrl_pin, INPUT);
-
+  Serial.printf("CurrentMode: %d\n", currentMode);
+  // updateMode(1);
+  pinMode(26, OUTPUT);
+  pinMode(27, OUTPUT);
+  Serial.printf("New mode: %d\n", currentMode);
+  // updateMode(0); // set cart mode to Locked
   wifiSetup(); // connect to wifi
-  mpuSetup();
-  scaleSetup(); // scale setup
+  // mpuSetup();
+  // scaleSetup(); // scale setup
 
   // Connect Cart to the Backend using HTTP request
-  httpClient.get("/api/v1/cart/start_cart/MuoHgSPyqIlr71w0ooqkhbLFhJalZry4KjYXgM0XxvUknuwRE2WrHw2o");
+  httpClient.get("/api/v1/cart/start_cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco");
 
   // read the status code and body of the response
   int statusCode = httpClient.responseStatusCode();
@@ -410,26 +366,58 @@ void setup() {
       delay(1000);
     }
   }
-  xTaskCreatePinnedToCore(
-      // PenetrationProcess,   // Function to be called
-      toggleLED_1,   // Function to be called
-      "PenetrationProcess", // Name of task
-      4096,                 // Stack size in bytes
-      NULL,                 // Parameter to pass to function
-      1,                    // Task priority (0 to configMAX_PRIORITIES - 1)
-      &penetHandle,   // Task handle
-      0);                   // core to run on
-  xTaskCreatePinnedToCore(mqtt, "Mqtt client", 4096, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(mpuTask, "Accelerometer Task", 4096, NULL, 1, &mpuHandle, 1);
-  xTaskCreatePinnedToCore(breakTask, "Break Task", 1024, NULL, 1, &breakHandle, 1);
-  xTaskCreatePinnedToCore(scaleTask, "Scale Task", 4096, NULL, 1, &scaleHandle, 1);
-  xTaskCreatePinnedToCore(alarmTask, "Alarm Task", 1024, NULL, 1, &alarmHandle, 1);
-  xTaskCreatePinnedToCore(scaleUpdate, "Reset Scale Registires by update", 1024, NULL, 1, &resetHandle, 1);
+  // xTaskCreatePinnedToCore(mqtt, "Mqtt client", 4096, NULL, 1, NULL, 1);
+  // xTaskCreatePinnedToCore(mpuTask, "Accelerometer Task", 4096, NULL, 1, &mpuHandle, 1);
+  // xTaskCreatePinnedToCore(breakTask, "Break Task", 1024, NULL, 1, &breakHandle, 1);
+  // xTaskCreatePinnedToCore(scaleTask, "Scale Task", 4096, NULL, 1, &scaleHandle, 1);
+  // xTaskCreatePinnedToCore(alarmTask, "Alarm Task", 1024, NULL, 1, &alarmHandle, 1);
+  // xTaskCreatePinnedToCore(scaleUpdate, "Reset Scale Registires by update", 1024, NULL, 1, &resetHandle, 1);
 
   // Create the queue with a capacity of 10 integers
-  xQueuePenet = xQueueCreate(1, sizeof(StaticJsonDocument<256>));
   xQueueScale = xQueueCreate(1, sizeof(StaticJsonDocument<256>));
-}
+
+  // xTaskCreatePinnedToCore(pentTask, "penteration sending", 1024, NULL, 1, &penetHandle, 1);
+  xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
+      mqtt,                // Function to be called
+      "Mqtt client",       // Name of task
+      4096,                // Stack size (bytes in ESP32, words in FreeRTOS)
+      NULL,                // Parameter to pass to function
+      1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
+      NULL,                // Task handle
+      1);            // Run on one core for demo purposes (ESP32 only)
+  xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
+       penetration,                // Function to be called
+       "Mqtt client",       // Name of task
+       4096,                // Stack size (bytes in ESP32, words in FreeRTOS)
+       NULL,                // Parameter to pass to function
+       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
+       NULL,                // Task handle
+       1);                  // Run on one core for demo purposes (ESP32 only)
+  xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
+      scaleTask,                // Function to be called
+      "Scale Task",       // Name of task
+      4096,                // Stack size (bytes in ESP32, words in FreeRTOS)
+      NULL,                // Parameter to pass to function
+      1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
+      &scaleHandle,                // Task handle
+      1);                  // Run on one core for demo purposes (ESP32 only)
+  xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
+      scaleUpdate,           // Function to be called
+      "Keep scale synced with registers",        // Name of task
+      1024,                // Stack size (bytes in ESP32, words in FreeRTOS)
+      NULL,                // Parameter to pass to function
+      1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
+      &resetHandle,        // Task handle
+      1);                  // Run on one core for demo purposes (ESP32 only)
+  // xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
+  //     mpuTask,             // Function to be called
+  //     "accelometer",       // Name of task
+  //     4096,                // Stack size (bytes in ESP32, words in FreeRTOS)
+  //     NULL,                // Parameter to pass to function
+  //     1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
+  //     NULL,                // Task handle
+  //     1);                  // Run on one core for demo purposes (ESP32 only)
+  }
 
 // Task to run forever
 void loop() {

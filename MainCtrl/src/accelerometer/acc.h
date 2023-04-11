@@ -10,4 +10,4 @@ extern Adafruit_MPU6050 mpu;
 boolean mpuSetup();
 
 // used inside loop to check if there is a movement
-void checkMovement();
+float checkMovement();
