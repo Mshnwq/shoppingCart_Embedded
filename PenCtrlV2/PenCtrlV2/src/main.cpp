@@ -53,44 +53,56 @@ long getAvgReadings(int sensorNo){
 
 void updateReadings(){
   delay(30);                            // Delay to make sure no interfernce between sensors
-  zone1S1_Reading = getAvgReadings(0);  // Store the reading of the ultrasonic sensor
+  zone1S1_Reading = round(getAvgReadings(0));  // Store the reading of the ultrasonic sensor
   delay(30);
-  zone1S2_Reading = getAvgReadings(1);
+  zone1S2_Reading = round(getAvgReadings(1));
   delay(30);
-  zone2S1_Reading = getAvgReadings(2);
+  zone2S1_Reading = round(getAvgReadings(2));
   delay(30);
-  zone2S2_Reading = getAvgReadings(3);
+  zone3S1_Reading = round(getAvgReadings(3));
   delay(30);
-  zone3S1_Reading = getAvgReadings(4);
+  zone2S2_Reading = round(getAvgReadings(4));
   delay(30);
-  zone3S2_Reading = getAvgReadings(5);
+  zone3S2_Reading = round(getAvgReadings(5));
   
 }
+// void showReadings(){
+//   Serial.print(0);
+//   Serial.print("=");
+//   Serial.print(zone1S1_Reading);
+//   Serial.print(1);
+//   Serial.print("=");
+//   Serial.print(zone1S2_Reading);
+//   Serial.print(2);
+//   Serial.print("=");
+//   Serial.print(zone2S1_Reading);
+//   Serial.print(3);
+//   Serial.print("=");
+//   Serial.print(zone2S2_Reading);
+//   Serial.print(4);
+//   Serial.print("=");
+//   Serial.print(zone3S1_Reading);
+//   Serial.print(5);
+//   Serial.print("=");
+//   Serial.print(zone3S2_Reading);
+//   Serial.println();
+
+// }
+
 void showReadings(){
-  Serial.print(0);
-  Serial.print("=");
+  Serial.print("L1=");
   Serial.print(zone1S1_Reading);
-  Serial.print("cm   ");
-  Serial.print(1);
-  Serial.print("=");
+  Serial.print("R1=");
   Serial.print(zone1S2_Reading);
-  Serial.print("cm   ");
-  Serial.print(2);
-  Serial.print("=");
+  Serial.print("L2=");
   Serial.print(zone2S1_Reading);
-  Serial.print("cm   ");
-  Serial.print(3);
-  Serial.print("=");
+  Serial.print("R2=");
   Serial.print(zone2S2_Reading);
-  Serial.print("cm   ");
-  Serial.print(4);
-  Serial.print("=");
+  Serial.print("L3=");
   Serial.print(zone3S1_Reading);
-  Serial.print("cm   ");
-  Serial.print(5);
-  Serial.print("=");
+  Serial.print("R3=");
   Serial.print(zone3S2_Reading);
-  Serial.print("cm   ");
+  Serial.print(".");
   Serial.println();
 
 }
