@@ -49,6 +49,8 @@ boolean clockWiseRotateFlag;
 float centery;
 float centerx;
 
+int beam_threshold;
+
 float beam_center_Rx1;
 float beam_center_Ry1;
 float beam_center_Rx2;
@@ -120,7 +122,7 @@ void setup() {
   rect(sonic_L3_ox, sonic_L3_oy-(sonicHeight/2), sonicWidth, sonicHeight, 4, 4, 4, 4);                //sonic L3
   smooth();
 
-  int beam_threshold = int(50*cm2pix);
+  beam_threshold = int(50*cm2pix);
   // intialize beam ends
   beam_center_Rx1 = sonic_R1_ox-beam_threshold;
   beam_center_Ry1 = sonic_R1_oy;
@@ -136,7 +138,7 @@ void setup() {
   beam_center_Lx3 = sonic_L3_ox+beam_threshold; 
   beam_center_Ly3 = sonic_L3_oy; 
 
-  myPort = new Serial(this,"COM3", 9600); // starts the serial communication
+  myPort = new Serial(this, "COM6", 9600); // starts the serial communication
   myPort.bufferUntil('.'); // reads the data from the serial port up to the character '.'. So actually it reads this: angle,distance.
   clockWiseRotateFlag = false;
 
@@ -198,16 +200,16 @@ void drawObject() {
   pushMatrix();
 
   strokeWeight(7);
-  stroke(255,10,10); // red color
+  stroke(85,170,255); // red color
 
   float angleR = radians(angle-90);
 
-  // int iDistanceR1 = 25;
-  float pixsDistance_R1 = iDistanceR1*cm2pix; // covers the distance from the sensor from cm to pixels
+  // int iDistanceR1 = 10;
+  float pixsDistance_R1 = beam_threshold-iDistanceR1*cm2pix; // covers the distance from the sensor from cm to pixels
   float pixsDistance_R1_x = pixsDistance_R1*cos(radians(angleR));
   float pixsDistance_R1_y = pixsDistance_R1*sin(radians(angleR));
 
-  float[]  points_R1_start = rotate(sonic_R1_ox, sonic_R1_oy, pixsDistance_R1_x + beam_center_Rx1, pixsDistance_R1_y + beam_center_Ry1, angleR);
+  float[]  points_R1_start = rotate(sonic_R1_ox, sonic_R1_oy, pixsDistance_R1_x, pixsDistance_R1_y + beam_center_Ry1, angleR);
   float pixsDistance_R1_x_start = points_R1_start[0];
   float pixsDistance_R1_y_start = points_R1_start[1];
 
@@ -224,14 +226,14 @@ void drawObject() {
   }
   
   strokeWeight(7);
-  stroke(255,10,10); // red color
+  stroke(0,0,255); // red color
 
   // int iDistanceR2 = 25;
-  float pixsDistance_R2 = iDistanceR2*cm2pix; // covers the distance from the sensor from cm to pixels
+  float pixsDistance_R2 = beam_threshold-iDistanceR2*cm2pix; // covers the distance from the sensor from cm to pixels
   float pixsDistance_R2_x = pixsDistance_R2*cos(radians(angleR));
   float pixsDistance_R2_y = pixsDistance_R2*sin(radians(angleR));
 
-  float[]  points_R2_start = rotate(sonic_R2_ox, sonic_R2_oy, pixsDistance_R2_x + beam_center_Rx2, pixsDistance_R2_y + beam_center_Ry2, angleR);
+  float[]  points_R2_start = rotate(sonic_R2_ox, sonic_R2_oy, pixsDistance_R2_x, pixsDistance_R2_y + beam_center_Ry2, angleR);
   float pixsDistance_R2_x_start = points_R2_start[0];
   float pixsDistance_R2_y_start = points_R2_start[1];
 
@@ -248,14 +250,14 @@ void drawObject() {
   }
   
   strokeWeight(7);
-  stroke(255,10,10); // red color
+  stroke(127,0,255); // red color
 
   // int iDistanceR3 = 25;
-  float pixsDistance_R3 = iDistanceR3*cm2pix; // covers the distance from the sensor from cm to pixels
+  float pixsDistance_R3 = beam_threshold-iDistanceR3*cm2pix; // covers the distance from the sensor from cm to pixels
   float pixsDistance_R3_x = pixsDistance_R3*cos(radians(angleR));
   float pixsDistance_R3_y = pixsDistance_R3*sin(radians(angleR));
 
-  float[]  points_R3_start = rotate(sonic_R3_ox, sonic_R3_oy, pixsDistance_R3_x + beam_center_Rx3, pixsDistance_R3_y + beam_center_Ry3, angleR);
+  float[]  points_R3_start = rotate(sonic_R3_ox, sonic_R3_oy, pixsDistance_R3_x, pixsDistance_R3_y + beam_center_Ry3, angleR);
   float pixsDistance_R3_x_start = points_R3_start[0];
   float pixsDistance_R3_y_start = points_R3_start[1];
 
@@ -272,7 +274,7 @@ void drawObject() {
   }
   
   strokeWeight(7);
-  stroke(5,100,100); // red color
+  stroke(255,141,100); // red color
 
   float angleL = radians(angle-90);
 
@@ -298,7 +300,7 @@ void drawObject() {
   }
   
   strokeWeight(7);
-  stroke(255,10,10); // red color
+  stroke(228,114,0); // red color
 
   // int iDistanceL2 = 20;
   float pixsDistance_L2 = iDistanceL2*cm2pix; // covers the distance from the sensor from cm to pixels
@@ -320,7 +322,7 @@ void drawObject() {
       line(pixsDistance_R1_x_start, pixsDistance_R1_y_start, pixsDistance_L2_x_end, pixsDistance_R1_y_end);
     }
   }strokeWeight(7);
-  stroke(255,10,10); // red color
+  stroke(236,231,95); // red color
 
   // int iDistanceL3 = 20;
   float pixsDistance_L3 = iDistanceL3*cm2pix; // covers the distance from the sensor from cm to pixels
