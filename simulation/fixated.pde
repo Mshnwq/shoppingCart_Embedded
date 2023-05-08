@@ -176,12 +176,12 @@ void serialEvent (Serial myPort) { // starts reading data from the Serial Port
   indexL3 = data.indexOf("L3="); // find the character and puts it into the variable "indexd3"
   indexR3 = data.indexOf("R3="); // find the character and puts it into the variable "indexd3"
 
-  distanceL1 = data.substring(indexL1+1, indexR1);       // read the data from position
-  distanceR1 = data.substring(indexR1+1, indexL2);       // read the data from position
-  distanceL2 = data.substring(indexL2+1, indexR2);       // read the data from position
-  distanceR2 = data.substring(indexR2+1, indexL3);       // read the data from position
-  distanceL3 = data.substring(indexL3+1, indexR3);       // read the data from position
-  distanceR3 = data.substring(indexR3+1, data.length()); // read the data from position
+  distanceL1 = data.substring(indexL1+3, indexR1);       // read the data from position
+  distanceR1 = data.substring(indexR1+3, indexL2);       // read the data from position
+  distanceL2 = data.substring(indexL2+3, indexR2);       // read the data from position
+  distanceR2 = data.substring(indexR2+3, indexL3);       // read the data from position
+  distanceL3 = data.substring(indexL3+3, indexR3);       // read the data from position
+  distanceR3 = data.substring(indexR3+3, data.length()); // read the data from position
   
   // converts the String variables into Integer
   iDistanceR1 = int(distanceR1);
@@ -191,12 +191,7 @@ void serialEvent (Serial myPort) { // starts reading data from the Serial Port
   iDistanceL2 = int(distanceL2);
   iDistanceL3 = int(distanceL3);
 
-  println("EEEEEEEEEEEEEEEEE")
-  println(iDistanceR1);
-  println(iDistanceR2);
-  println(iDistanceR3);
-  println("OOOOOOOO")
-  
+  println(data);
 }
 
 void drawObject() {
@@ -207,7 +202,7 @@ void drawObject() {
 
   float angleR = radians(angle-90);
 
-  int iDistanceR1 = 25;
+  // int iDistanceR1 = 25;
   float pixsDistance_R1 = iDistanceR1*cm2pix; // covers the distance from the sensor from cm to pixels
   float pixsDistance_R1_x = pixsDistance_R1*cos(radians(angleR));
   float pixsDistance_R1_y = pixsDistance_R1*sin(radians(angleR));
@@ -231,7 +226,7 @@ void drawObject() {
   strokeWeight(7);
   stroke(255,10,10); // red color
 
-  int iDistanceR2 = 25;
+  // int iDistanceR2 = 25;
   float pixsDistance_R2 = iDistanceR2*cm2pix; // covers the distance from the sensor from cm to pixels
   float pixsDistance_R2_x = pixsDistance_R2*cos(radians(angleR));
   float pixsDistance_R2_y = pixsDistance_R2*sin(radians(angleR));
@@ -255,7 +250,7 @@ void drawObject() {
   strokeWeight(7);
   stroke(255,10,10); // red color
 
-  int iDistanceR3 = 25;
+  // int iDistanceR3 = 25;
   float pixsDistance_R3 = iDistanceR3*cm2pix; // covers the distance from the sensor from cm to pixels
   float pixsDistance_R3_x = pixsDistance_R3*cos(radians(angleR));
   float pixsDistance_R3_y = pixsDistance_R3*sin(radians(angleR));
@@ -281,7 +276,7 @@ void drawObject() {
 
   float angleL = radians(angle-90);
 
-  int iDistanceL1= 40;
+  // int iDistanceL1= 40;
   float pixsDistance_L1 = iDistanceL1*cm2pix; // covers the distance from the sensor from cm to pixels
   float pixsDistance_L1_x = pixsDistance_L1*cos(radians(angleL));
   float pixsDistance_L1_y = pixsDistance_L1*sin(radians(angleL));
@@ -305,7 +300,7 @@ void drawObject() {
   strokeWeight(7);
   stroke(255,10,10); // red color
 
-  int iDistanceL2 = 20;
+  // int iDistanceL2 = 20;
   float pixsDistance_L2 = iDistanceL2*cm2pix; // covers the distance from the sensor from cm to pixels
   float pixsDistance_L2_x = pixsDistance_L2*cos(radians(angleL));
   float pixsDistance_L2_y = pixsDistance_L2*sin(radians(angleL));
@@ -327,7 +322,7 @@ void drawObject() {
   }strokeWeight(7);
   stroke(255,10,10); // red color
 
-  int iDistanceL3 = 20;
+  // int iDistanceL3 = 20;
   float pixsDistance_L3 = iDistanceL3*cm2pix; // covers the distance from the sensor from cm to pixels
   float pixsDistance_L3_x = pixsDistance_L3*cos(radians(angleL));
   float pixsDistance_L3_y = pixsDistance_L3*sin(radians(angleL));
