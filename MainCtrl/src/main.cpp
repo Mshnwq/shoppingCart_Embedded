@@ -38,6 +38,7 @@ TaskHandle_t alarmHandle;
 TaskHandle_t scaleHandle;
 TaskHandle_t resetHandle;
 TaskHandle_t mpuHandle;
+TaskHandle_t sleepHandle;
 // Create a handle for the queue
 QueueHandle_t xQueuePenet;
 QueueHandle_t xQueueScale;
@@ -54,8 +55,8 @@ static const int blink_rate = 2000;  // ms
 
 
 // MQTT broker details
-// const char *BROKER = "192.168.30.66";
-const char *BROKER = "192.168.90.66";
+const char *BROKER = "192.168.22.66";
+// const char *BROKER = "192.168.137.72";
 const int BROKER_PORT = 1883;
 const int HTTP_PORT = 1111;
 
@@ -79,6 +80,13 @@ float scaleReading = 0;
 // global buffer for xqueue data exchance
 StaticJsonDocument<256> docBuf;
 
+// Global variable for holding time 
+time_t workTime;
+
+bool interruptFlag = false;
+
+// Global variable for number of boots
+RTC_DATA_ATTR int bootCount = 0;
 
 void pentTask(void *pvParameters) {
   // Code for slave control task
@@ -97,7 +105,30 @@ void pentTask(void *pvParameters) {
   //   vTaskDelay(1000/ portTICK_PERIOD_MS);
   // }
 }
-
+void sleepESP(void *arameter){
+  while(true){
+    Serial.println("sleep func....");
+    Serial.print("pin intterupt: ");
+    Serial.println(digitalRead(14));
+    int status = getCurrentMode();
+    time_t currentTime = time(NULL);
+    time_t diff = difftime(currentTime, workTime);
+    if(status == 0){
+      // check difference is 10 minutes
+      if(diff > 5){
+        delay(1000);
+        digitalWrite(26, HIGH);
+        Serial.println("Deep sleep");
+        delay(2000);
+        esp_deep_sleep_start();
+        Serial.println("Deep sleep");
+        // put in sleep mode
+        interruptFlag = false;
+      }
+    }
+    delay(1000);
+  }
+}
 void scaleTask(void *pvParameters) {
   // Code for scale task
   StaticJsonDocument<256> receivedDoc;
@@ -265,19 +296,20 @@ void scaleUpdate(void *arameter){
   }
 }
 
+
 // callback function for receiving MQTT messages
 void mqttCallback(char *topic, byte *payload, unsigned int length)
 {
-  // Serial.print("Message received [");
-  // Serial.print(topic);
-  // Serial.print("]: ");
+  Serial.print("Message received [");
+  Serial.print(topic);
+  Serial.print("]: ");
 
-  // for (int i = 0; i < length; i++)
-  // {
-  //   Serial.print((char)payload[i]);
-  // }
+  for (int i = 0; i < length; i++)
+  {
+    Serial.print((char)payload[i]);
+  }
 
-  // Serial.println();
+  Serial.println();
   DeserializationError error = deserializeJson(docBuf, payload, length);
   if (error)
   {
@@ -305,67 +337,79 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
         updateMode(4);
     }
   }
-
+// void IRAM_ATTR handleInterrupt() {
+//   Serial.println("wakeup...!");
+//   interruptFlag = true;
+//   // Your interrupt handling code here
+// }
 // Create an instance of the SerialDebug library
 void setup() {
-
+  pinMode(GPIO_NUM_14, INPUT);
+  pinMode(GPIO_NUM_26, OUTPUT);
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_14,0); //1 = High, 0 = Low
+  // Attach interrupt to the handleInterrupt function
+  // attachInterrupt(digitalPinToInterrupt(GPIO_NUM_14), handleInterrupt,LOW);
+  ++bootCount;
   Serial.begin(9600);
   Serial.printf("CurrentMode: %d\n", currentMode);
   // updateMode(1);
   pinMode(26, OUTPUT);
   pinMode(27, OUTPUT);
   Serial.printf("New mode: %d\n", currentMode);
+  Serial.printf("boot count : %d\n", bootCount);
   // updateMode(0); // set cart mode to Locked
-  wifiSetup(); // connect to wifi
+  // wifiSetup(); // connect to wifi
   // mpuSetup();
-  // scaleSetup(); // scale setup
-
-  // Connect Cart to the Backend using HTTP request
-  httpClient.get("/api/v1/cart/start_cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco");
-
-  // read the status code and body of the response
-  int statusCode = httpClient.responseStatusCode();
-  String response = httpClient.responseBody();
-
-  const size_t capacity = JSON_OBJECT_SIZE(8) + 8*120;
-  DynamicJsonDocument doc(capacity);
-  DeserializationError error = deserializeJson(doc, response);
-
-  if(statusCode == 200){
-    if (error)
-    {
-      Serial.print("deserializeJson() failed: ");
-      Serial.println(error.f_str());
-    }
-    else
-    {
-      const char *token = doc["token"];
-      strcpy(TOPIC_PUB, "/cart/");
-      strcpy(TOPIC_SUB, "/cart/");
-      strcat(TOPIC_PUB, token);
-      strcat(TOPIC_SUB, token);
-    }
-  }else
-    Serial.println("Failed to connect Cart to Backend.");
-  // connect to MQTT broker
-  mqttClient.setServer(BROKER, BROKER_PORT);
-  mqttClient.setCallback(mqttCallback);
-  while (!mqttClient.connected())
-  {
-    if (mqttClient.connect("ESP32Client"))
-    {
-      Serial.println("Connected to MQTT broker.");
-      mqttClient.subscribe(TOPIC_SUB);
-      Serial.println("Subscribed to: ");
-      Serial.println(TOPIC_SUB);
-    }
-    else
-    {
-      Serial.print("Failed to connect to MQTT broker, rc=");
-      Serial.println(mqttClient.state());
-      delay(1000);
-    }
+  if(bootCount ==1){
+    // scaleSetup(); // scale setup
   }
+
+  // // Connect Cart to the Backend using HTTP request
+  // httpClient.get("/api/v1/cart/start_cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco");
+
+  // // read the status code and body of the response
+  // int statusCode = httpClient.responseStatusCode();
+  // String response = httpClient.responseBody();
+
+  // const size_t capacity = JSON_OBJECT_SIZE(8) + 8*120;
+  // DynamicJsonDocument doc(capacity);
+  // DeserializationError error = deserializeJson(doc, response);
+
+  // if(statusCode == 200){
+  //   if (error)
+  //   {
+  //     Serial.print("deserializeJson() failed: ");
+  //     Serial.println(error.f_str());
+  //   }
+  //   else
+  //   {
+  //     const char *token = doc["token"];
+  //     strcpy(TOPIC_PUB, "/cart/");
+  //     strcpy(TOPIC_SUB, "/cart/");
+  //     strcat(TOPIC_PUB, token);
+  //     strcat(TOPIC_SUB, token);
+  //   }
+  // }else
+  //   Serial.println("Failed to connect Cart to Backend.");
+  // // connect to MQTT broker
+  // mqttClient.setServer(BROKER, BROKER_PORT);
+  // mqttClient.setCallback(mqttCallback);
+  // while (!mqttClient.connected())
+  // {
+  //   if (mqttClient.connect("ESP32Client"))
+  //   {
+  //     Serial.println("Connected to MQTT broker.");
+  //     mqttClient.subscribe(TOPIC_SUB);
+  //     Serial.println("Subscribed to: ");
+  //     Serial.println(TOPIC_SUB);
+  //   }
+  //   else
+  //   {
+  //     Serial.print("Failed to connect to MQTT broker, rc=");
+  //     Serial.println(mqttClient.state());
+  //     delay(1000);
+  //   }
+  // }
   // xTaskCreatePinnedToCore(mqtt, "Mqtt client", 4096, NULL, 1, NULL, 1);
   // xTaskCreatePinnedToCore(mpuTask, "Accelerometer Task", 4096, NULL, 1, &mpuHandle, 1);
   // xTaskCreatePinnedToCore(breakTask, "Break Task", 1024, NULL, 1, &breakHandle, 1);
@@ -385,14 +429,14 @@ void setup() {
       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
       NULL,                // Task handle
       1);            // Run on one core for demo purposes (ESP32 only)
-  xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
-       penetration,                // Function to be called
-       "Mqtt client",       // Name of task
-       4096,                // Stack size (bytes in ESP32, words in FreeRTOS)
-       NULL,                // Parameter to pass to function
-       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
-       NULL,                // Task handle
-       1);                  // Run on one core for demo purposes (ESP32 only)
+  // xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
+  //      penetration,                // Function to be called
+  //      "Mqtt client",       // Name of task
+  //      4096,                // Stack size (bytes in ESP32, words in FreeRTOS)
+  //      NULL,                // Parameter to pass to function
+  //      1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
+  //      NULL,                // Task handle
+  //      1);                  // Run on one core for demo purposes (ESP32 only)
   xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
       scaleTask,                // Function to be called
       "Scale Task",       // Name of task
@@ -408,6 +452,14 @@ void setup() {
       NULL,                // Parameter to pass to function
       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
       &resetHandle,        // Task handle
+      1);                  // Run on one core for demo purposes (ESP32 only)
+    xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
+      sleepESP,           // Function to be called
+      "Keep scale synced with registers",        // Name of task
+      1024,                // Stack size (bytes in ESP32, words in FreeRTOS)
+      NULL,                // Parameter to pass to function
+      1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
+      &sleepHandle,        // Task handle
       1);                  // Run on one core for demo purposes (ESP32 only)
   // xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
   //     mpuTask,             // Function to be called

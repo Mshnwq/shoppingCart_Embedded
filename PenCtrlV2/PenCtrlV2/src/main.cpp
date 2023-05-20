@@ -117,6 +117,7 @@ void scaleMode(){
     showReadings() ;
         if(!zone2NoPen || !zone3NoPen){
           digitalWrite(errorPin, HIGH);
+          break;
         }
         if(zone2NoPen && zone3NoPen){
           digitalWrite(errorPin, LOW);

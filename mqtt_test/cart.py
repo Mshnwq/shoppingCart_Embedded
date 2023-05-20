@@ -4,10 +4,11 @@ import random, json, requests
 
 
 print("connected")
-req = requests.get("http://localhost:1111/api/v1/cart/start_cart/lTJqvZc1KeLIR5yHYCkabMdU4evreusC0xyPHagMqnW3I97bM2AhL6fc")
+req = requests.get("http://192.168.137.72:1111/api/v1/cart/start_cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco")
 print("request status: ", req.status_code)
-
+count = 0
 def on_message_recived(client, userdata, message):
+    global count
     topic = message.topic
     pay = message.payload.decode("utf-8")
     try:
@@ -43,7 +44,9 @@ def on_message_recived(client, userdata, message):
             "mqtt_type": "penetration_data",
             "data": "cart-id"
             }
-            # client.publish(topic, json.dumps(resp))
+            if count < 3:
+                client.publish(topic, json.dumps(resp))
+                count +=1
             ...
         else:
             ...
@@ -52,9 +55,9 @@ def on_message_recived(client, userdata, message):
 
 # client = Client(client_id=””, clean_session=True, userdata=None, protocol=MQTTv311, transport=”tcp”)
 client = mqtt.Client(client_id="cart-1", clean_session=True, userdata=None)
-client.connect(host="localhost", port=1883)
+client.connect(host="192.168.137.72", port=1883)
 
-client.subscribe("/cart/lTJqvZc1KeLIR5yHYCkabMdU4evreusC0xyPHagMqnW3I97bM2AhL6fc")
+client.subscribe("/cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco")
 client.on_message = on_message_recived
 client.loop_start()
 

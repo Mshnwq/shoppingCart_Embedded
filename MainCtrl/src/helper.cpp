@@ -15,10 +15,12 @@ void enableModeTasks(int mode){
     switch (mode) {
       case 0:
         // locked tasks
-        vTaskSuspend(scaleHandle);
-        vTaskSuspend(alarmHandle);
-        vTaskSuspend(penetHandle);
-        vTaskSuspend(resetHandle);
+        vTaskResume(sleepHandle);
+        workTime = time(NULL);
+        // vTaskSuspend(scaleHandle);
+        // vTaskSuspend(alarmHandle);
+        // vTaskSuspend(penetHandle);
+        // vTaskSuspend(resetHandle);
         // vTaskSuspend(mpuHandle);
         activateLock();
         break;
@@ -34,9 +36,9 @@ void enableModeTasks(int mode){
       case 2:
         // weighing tasks
         activateLock(); 
-        vTaskResume(penetHandle);
-        vTaskResume(scaleHandle);
-        vTaskResume(resetHandle);
+        // vTaskResume(penetHandle);
+        // vTaskResume(scaleHandle);
+        // vTaskResume(resetHandle);
         break;
       case 4:
         // alarm tasks
@@ -66,4 +68,7 @@ void enableModeTasks(int mode){
         vTaskResume(penetHandle);
         break;
     }
+}
+int getCurrentMode(){
+  return currentMode;
 }

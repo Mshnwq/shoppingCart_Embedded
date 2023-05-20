@@ -3,10 +3,15 @@ WiFiClient wifiClient;
 boolean wifiSetup(){
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     WiFi.hostname("ESP32"); // Set the device name
-    while (WiFi.status() != WL_CONNECTED)
+    unsigned long startTime = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - startTime < 2000)
     {
         delay(1000);
         Serial.println("Connecting to WiFi...");
+    }
+    if( WiFi.status() != WL_CONNECTED){
+        Serial.println("failed to connect");
+        // ESP.restart();
     }
     Serial.println("Wifi Connected!");
     return true;
