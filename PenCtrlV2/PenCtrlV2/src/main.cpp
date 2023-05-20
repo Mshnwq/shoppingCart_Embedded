@@ -9,7 +9,7 @@
 #define errorPin 26
 #define sucessPin 27
 #define releasePin 15
-int mode;
+int mode = 2;
 
 NewPing sonar[SONAR_NUM] = {   // Sensor object array
   // Each sensor's trigger pin, echo pin, and max distance to ping
@@ -40,10 +40,10 @@ long getAvgReadings(int sensorNo){
   long sensorAvg = 0;                     // Varaoble of the average
   int i = 0;                              // Variable for iteration
   while(i<avgQuantity){
-    // if(sonar[sensorNo].ping_cm() == 0) {  // Case where reading is 0
-    //   sensorAvg = 0;
-    //   break;
-    // }
+    if(sonar[sensorNo].ping_cm() == 0) {  // Case where reading is 0
+      sensorAvg = 0;
+      break;
+    }
     sensorAvg += sonar[sensorNo].ping_cm(); // Add average
     i++;                                    // Iterate 
   }
@@ -51,46 +51,61 @@ long getAvgReadings(int sensorNo){
 }
 
 
-void updateReadings(){
-  delay(30);                            // Delay to make sure no interfernce between sensors
-  zone1S1_Reading = getAvgReadings(0);  // Store the reading of the ultrasonic sensor
+void updateReadings(){                      
+  zone1S1_Reading = round(getAvgReadings(0));  // Store the reading of the ultrasonic sensor
+  delay(30);                                   // Delay to make sure no interfernce between sensors
+  zone1S2_Reading = round(getAvgReadings(1));
   delay(30);
-  zone1S2_Reading = getAvgReadings(1);
+  zone2S1_Reading = round(getAvgReadings(2));
   delay(30);
-  zone2S1_Reading = getAvgReadings(2);
+  zone2S2_Reading = round(getAvgReadings(3));
   delay(30);
-  zone2S2_Reading = getAvgReadings(3);
+  zone3S1_Reading = round(getAvgReadings(4));
   delay(30);
-  zone3S1_Reading = getAvgReadings(4);
+  zone3S2_Reading = round(getAvgReadings(5));
   delay(30);
-  zone3S2_Reading = getAvgReadings(5);
-  
+  // Zones Logic
+  zone1NoPen = (zone1S1_Reading == 0 && zone1S2_Reading == 0);  // Logic where no penetration is detected if no reading from parallel sensors 
+  zone2NoPen = (zone2S1_Reading == 0 && zone2S2_Reading == 0);
+  zone3NoPen = (zone3S1_Reading == 0 && zone3S2_Reading == 0);
 }
+// void showReadings(){
+//   Serial.print(0);
+//   Serial.print("=");
+//   Serial.print(zone1S1_Reading);
+//   Serial.print(1);
+//   Serial.print("=");
+//   Serial.print(zone1S2_Reading);
+//   Serial.print(2);
+//   Serial.print("=");
+//   Serial.print(zone2S1_Reading);
+//   Serial.print(3);
+//   Serial.print("=");
+//   Serial.print(zone2S2_Reading);
+//   Serial.print(4);
+//   Serial.print("=");
+//   Serial.print(zone3S1_Reading);
+//   Serial.print(5);
+//   Serial.print("=");
+//   Serial.print(zone3S2_Reading);
+//   Serial.println();
+
+// }
+
 void showReadings(){
-  Serial.print(0);
-  Serial.print("=");
+  Serial.print("L1=");
   Serial.print(zone1S1_Reading);
-  Serial.print("cm   ");
-  Serial.print(1);
-  Serial.print("=");
+  Serial.print("R1=");
   Serial.print(zone1S2_Reading);
-  Serial.print("cm   ");
-  Serial.print(2);
-  Serial.print("=");
+  Serial.print("L2=");
   Serial.print(zone2S1_Reading);
-  Serial.print("cm   ");
-  Serial.print(3);
-  Serial.print("=");
+  Serial.print("R2=");
   Serial.print(zone2S2_Reading);
-  Serial.print("cm   ");
-  Serial.print(4);
-  Serial.print("=");
+  Serial.print("L3=");
   Serial.print(zone3S1_Reading);
-  Serial.print("cm   ");
-  Serial.print(5);
-  Serial.print("=");
+  Serial.print("R3=");
   Serial.print(zone3S2_Reading);
-  Serial.print("cm   ");
+  Serial.print(".");
   Serial.println();
 
 }
@@ -100,10 +115,12 @@ void normalMode(){
     updateReadings();
     showReadings() ;
     if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
-      digitalWrite(errorPin, HIGH);
+      digitalWrite(26, HIGH);
+      Serial.println("should be high");
     }
     if(zone1NoPen && zone2NoPen && zone3NoPen){
-      digitalWrite(errorPin, LOW);
+      digitalWrite(26, LOW);
+       Serial.println("should be low");
     }
     if(mode != 1) {
       break;
@@ -152,6 +169,7 @@ void scaleMode(){
 
 
 void setup() {
+  pinMode(errorPin, OUTPUT);
   Serial.begin(9600); // Open serial monitor at 115200 baud to see ping results.
   delay(75);
 }
