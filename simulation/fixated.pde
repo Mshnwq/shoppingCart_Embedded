@@ -319,7 +319,7 @@ void drawObject() {
   if(iDistanceL2>0) {
   // limiting the range to 55 cm
     if(iDistanceL2<55*cm2pix) {
-      line(pixsDistance_R1_x_start, pixsDistance_R1_y_start, pixsDistance_L2_x_end, pixsDistance_R1_y_end);
+      line(pixsDistance_L2_x_start, pixsDistance_L2_y_start, pixsDistance_L2_x_end, pixsDistance_L2_y_end);
     }
   }strokeWeight(7);
   stroke(236,231,95); // red color
