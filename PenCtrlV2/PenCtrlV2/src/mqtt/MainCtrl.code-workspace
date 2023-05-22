@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "MainCtrl",
+			"path": "../../../../MainCtrl"
+		},
+		{
+			"name": "PenCtrlV2",
+			"path": "../.."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"new": "cpp"
+		}
+	}
+}

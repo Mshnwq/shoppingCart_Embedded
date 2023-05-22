@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <NewPing.h>
+#include "wifi/wifi.h"
+#include "mqtt/mqtt.h"
 
 #define SONAR_NUM 6      // Number of sensors.
 #define MAX_DISTANCE 40 // Maximum distance (in cm)to ping
@@ -9,7 +11,7 @@
 #define errorPin 26
 #define sucessPin 27
 #define releasePin 15
-int mode = 2;
+
 
 NewPing sonar[SONAR_NUM] = {   // Sensor object array
   // Each sensor's trigger pin, echo pin, and max distance to ping
@@ -35,6 +37,7 @@ boolean zone2NoPen = (zone2S1_Reading == 0 && zone2S2_Reading == 0);
 boolean zone3NoPen = (zone3S1_Reading == 0 && zone3S2_Reading == 0);
 boolean nextZone = false;
 
+// int errorStatus = 0; // 0 = no error, 1 = error detected
 // Funiction to get the average of the sensor based on pre determined number of readings. In this case 3.
 long getAvgReadings(int sensorNo){
   long sensorAvg = 0;                     // Varaoble of the average
@@ -113,16 +116,25 @@ void showReadings(){
 void normalMode(){
   while(true){
     updateReadings();
-    showReadings() ;
+    showReadings();
     if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
-      digitalWrite(26, HIGH);
-      Serial.println("should be high");
+      if(!errorStatus){
+        //publish mqtt
+        publishMqtt(1);
+        errorStatus = 1;
+      }
+      // digitalWrite(26, HIGH);
+      // publish mqtt error
+
+      // Serial.println("should be high");
+
+      
     }
-    if(zone1NoPen && zone2NoPen && zone3NoPen){
-      digitalWrite(26, LOW);
-       Serial.println("should be low");
-    }
-    if(mode != 1) {
+    // if(zone1NoPen && zone2NoPen && zone3NoPen){
+    //   digitalWrite(26, LOW);
+    //    Serial.println("should be low");
+    // }
+    if(mode != 0) {
       break;
     }
   }
@@ -131,45 +143,65 @@ void normalMode(){
 void scaleMode(){
   while(true){
     updateReadings();
-    showReadings() ;
+    // showReadings() ;
         if(!zone2NoPen || !zone3NoPen){
-          digitalWrite(errorPin, HIGH);
-          break;
+          if(!errorStatus){
+          // publish mqtt error
+          publishMqtt(1);
+          errorStatus =1;
+          }
         }
-        if(zone2NoPen && zone3NoPen){
-          digitalWrite(errorPin, LOW);
+        if(mode != 1)
+          break;    
+  }
+}
+
+void removeItem(){
+  while(true){
+    if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+          if(!errorStatus){
+          // publish mqtt error
+          publishMqtt(1);
+          errorStatus =1;
+          }
         }
-        if(zone1NoPen && !zone2NoPen && zone3NoPen){
-          nextZone = true;
-        }
-    if(nextZone){
-      while(true){
-        updateReadings();
-        showReadings() ;
-        if(!zone1NoPen || (!zone2NoPen&&!zone3NoPen)){
-          digitalWrite(errorPin, HIGH);
-        }
-        if(zone1NoPen && ((!zone2NoPen&&zone3NoPen) || (zone2NoPen&&!zone3NoPen))){
-          digitalWrite(errorPin, LOW);
-        }
-        if(zone1NoPen && zone2NoPen && zone3NoPen){
-          digitalWrite(sucessPin, HIGH);
-          delay(50);
-          digitalWrite(sucessPin, LOW);
-          break;
-        } 
-      }
-    }
-    if(nextZone) {
-      nextZone = false;
+    if(mode != 3){
       break;
     }
   }
 }
 
 
+void movingMode(){
+  while(true){
+        updateReadings();
+        showReadings() ;
+        if(!zone1NoPen || (!zone2NoPen&&!zone3NoPen)){
+          if(!errorStatus){
+          // publish mqtt error
+          publishMqtt(1);
+          errorStatus =1;
+          }
+        }
+        // if(zone1NoPen && ((!zone2NoPen&&zone3NoPen) || (zone2NoPen&&!zone3NoPen))){
+        //   digitalWrite(errorPin, LOW);
+        // }
+        if(zone1NoPen && zone2NoPen && zone3NoPen){
+          // publish mqtt success
+          publishMqtt(0);
+          mode = 0;
+          break;
+        } 
+        if (mode != 2)
+          break;
+      }
+}
+
 void setup() {
   pinMode(errorPin, OUTPUT);
+  // connect wifit
+  wifiSetup();
+  mqttSetup();
   Serial.begin(9600); // Open serial monitor at 115200 baud to see ping results.
   delay(75);
 }
@@ -177,16 +209,19 @@ void setup() {
 void loop() {
   updateReadings();
   showReadings() ;
-  if(digitalRead(releasePin)){
-    digitalWrite(errorPin, LOW);
-  }
   switch (mode)
   {
-  case 1:
+  case 0:
     normalMode();
     break;
-  case 2:
+  case 1:
     scaleMode();
+    break;
+  case 2:
+    movingMode();
+    break;
+  case 3:
+    removeItem();
     break;
   default:
     break;
