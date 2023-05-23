@@ -45,9 +45,10 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
   }
   const char *mqtt_type = docBuf["mqtt_type"]; // Assuming the payload contains a field named "message"
 
-//   if (strcmp(mqtt_type, "check_weight") == 0) {
-    
-//   }
+    if (strcmp(mqtt_type, "check_weight") == 0) {
+      process = docBuf["process"];
+      item_barcode = docBuf["item_barcode"];
+    }
     if (strcmp(mqtt_type, "request_add_item") == 0) {
         mode = 1; // when reciving add item request update pentration mode to weighing
     }
@@ -58,9 +59,9 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       mode = 0; // when scale readings doesn't match role back to active mode
     }
     if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0)){
-      mode = 2; // when scale readings doesn't match role back to active mode
+      mode = 2; // when scale matches change to transient mode
     }
-    if((strcmp(mqtt_type, "penetration_release") == 0)){
+    if((strcmp(mqtt_type, "alarm_detection") == 0) && (docBuf["trigger"] == false)){
       errorStatus = 0; // reset the error flag
     }
     if((strcmp(mqtt_type, "request_remove_item") == 0)){
@@ -71,9 +72,11 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
 // status 0 = success, 1 = error, final succ
 void publishMqtt(int status){
     StaticJsonDocument<256> pub;
-    pub["mqtt_type"] = "penetration_result";
+    pub["mqtt_type"] = "penetration_data";
     pub["sender"] = "cart-slave-1";
     pub["status"] = status;
+    pub["process"] = process;
+    pub["item_barcode"] = item_barcode;
     String jsonString;
     serializeJson(pub, jsonString);
     const char *myChar = jsonString.c_str();
