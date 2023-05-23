@@ -1,8 +1,10 @@
 #include <Arduino.h>
 #include <NewPing.h>
+#include "main.h"
 #include "wifi/wifi.h"
 #include "mqtt/mqtt.h"
 
+// char cartToken[63] = "/cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco";
 #define SONAR_NUM 6      // Number of sensors.
 #define MAX_DISTANCE 40 // Maximum distance (in cm)to ping
 #define oddPin 16      // Number of sensors.

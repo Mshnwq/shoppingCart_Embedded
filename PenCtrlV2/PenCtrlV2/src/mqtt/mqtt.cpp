@@ -1,9 +1,25 @@
 #include "mqtt.h"
 
 // Setup function for mqtt
+const char *BROKER = "192.168.22.66";
+const int BROKER_PORT = 1883;
 
+// MQTT topics
+// not nown by default need to hit http request in order to authenticate
+// cart token
+char cartToken[63] = "/cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco";
+char *TOPIC_PUB = cartToken;
+char *TOPIC_SUB = cartToken;
+
+PubSubClient mqttClient(wifiClient); // mqttt client
+
+StaticJsonDocument<256> docBuf;
+int errorStatus = 0; // Error flag
+int mode = 1; // initial mode 
+const char* process;
+const char* item_barcode;
 void mqttSetup(){
-    // subscribe to mqtt broker
+//     // subscribe to mqtt broker
   mqttClient.setServer(BROKER, BROKER_PORT);
   mqttClient.setCallback(mqttCallback);
   while (!mqttClient.connected())
@@ -71,14 +87,17 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
 
 // status 0 = success, 1 = error, final succ
 void publishMqtt(int status){
+    // const char *currentProc = process;
+    // const char *currentItem = item_barcode;
     StaticJsonDocument<256> pub;
     pub["mqtt_type"] = "penetration_data";
     pub["sender"] = "cart-slave-1";
     pub["status"] = status;
-    pub["process"] = process;
-    pub["item_barcode"] = item_barcode;
+    pub["process"] = "123";
+    pub["item_barcode"] = "123";
     String jsonString;
-    serializeJson(pub, jsonString);
+    // serializeJson(pub, jsonString);
+    Serial.println(jsonString);
     const char *myChar = jsonString.c_str();
     mqttClient.publish(TOPIC_PUB, myChar);
     Serial.println("send pass to mqtt");
