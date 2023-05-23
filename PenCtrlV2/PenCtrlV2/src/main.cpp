@@ -12,6 +12,9 @@
 #define sucessPin 27
 #define releasePin 15
 
+long delayCheck = 300;
+bool secondCheck = true;
+long checkTime = millis();
 
 NewPing sonar[SONAR_NUM] = {   // Sensor object array
   // Each sensor's trigger pin, echo pin, and max distance to ping
@@ -37,6 +40,19 @@ boolean zone2NoPen = (zone2S1_Reading == 0 && zone2S2_Reading == 0);
 boolean zone3NoPen = (zone3S1_Reading == 0 && zone3S2_Reading == 0);
 boolean nextZone = false;
 
+// confirms penetration
+
+int checkAgain(){
+  if(secondCheck){
+    checkTime = millis();
+    secondCheck = false;
+  }
+  if((checkTime+delayCheck) < millis()){
+    return 1;
+  }else{
+    return 0;
+  }
+}
 // int errorStatus = 0; // 0 = no error, 1 = error detected
 // Funiction to get the average of the sensor based on pre determined number of readings. In this case 3.
 long getAvgReadings(int sensorNo){
@@ -116,85 +132,180 @@ void showReadings(){
 void normalMode(){
   while(true){
     updateReadings();
-    showReadings();
+    // showReadings() ;
     if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
-      if(!errorStatus){
-        //publish mqtt
-        publishMqtt(1);
-        errorStatus = 1;
+      if(checkAgain()){
+        if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
+          if(!errorStatus){
+            //publish mqtt
+            publishMqtt(1);
+            errorStatus = 1;
+          }
+        }
+        secondCheck = true;
       }
-      // digitalWrite(26, HIGH);
-      // publish mqtt error
-
-      // Serial.println("should be high");
-
-      
-    }
-    // if(zone1NoPen && zone2NoPen && zone3NoPen){
-    //   digitalWrite(26, LOW);
-    //    Serial.println("should be low");
-    // }
-    if(mode != 0) {
-      break;
+    } else{
+        secondCheck = true;
+    }  
+    if(mode != 0){
+    break;  
     }
   }
+  // while(true){
+  //   updateReadings();
+  //   showReadings();
+  //   if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
+  //     if(checkAgain()){
+  //       if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
+  //         if(!errorStatus){
+  //           //publish mqtt
+  //           publishMqtt(1);
+  //           errorStatus = 1;
+  //         }
+  //       }
+  //       secondCheck = true;
+  //     } else{
+  //       secondCheck = true;
+  //     }
+  //     // digitalWrite(26, HIGH);
+  //     // publish mqtt error
+
+  //     // Serial.println("should be high"); 
+  //   }
+  //   // if(zone1NoPen && zone2NoPen && zone3NoPen){
+  //   //   digitalWrite(26, LOW);
+  //   //    Serial.println("should be low");
+  //   // }
+  //   if(mode != 0) {
+  //     break;
+  //   }
+  // }
 }
 
 void scaleMode(){
   while(true){
     updateReadings();
     // showReadings() ;
+    if(!zone2NoPen || !zone3NoPen){
+      if(checkAgain()){
         if(!zone2NoPen || !zone3NoPen){
           if(!errorStatus){
-          // publish mqtt error
-          publishMqtt(1);
-          errorStatus =1;
+            //publish mqtt
+            publishMqtt(1);
+            errorStatus = 1;
           }
         }
-        if(mode != 1)
-          break;    
+        secondCheck = true;
+      }
+    } else{
+        secondCheck = true;
+    }  
+    if(mode != 1){
+    break;  
+    }
   }
 }
 
 void removeItem(){
   while(true){
+    updateReadings();
+    // showReadings() ;
     if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+      if(checkAgain()){
+        if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
           if(!errorStatus){
-          // publish mqtt error
-          publishMqtt(1);
-          errorStatus =1;
+            //publish mqtt
+            publishMqtt(1);
+            errorStatus = 1;
           }
         }
+        secondCheck = true;
+      }
+    } else{
+        secondCheck = true;
+    }  
     if(mode != 3){
-      break;
+    break;  
     }
   }
+  // while(true){
+  //   updateReadings();
+  //   if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+  //     if(checkAgain()){
+  //       if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+  //         if(!errorStatus){
+  //           //publish mqtt
+  //           publishMqtt(1);
+  //           errorStatus = 1;
+  //         }
+  //       }
+  //       secondCheck = true;
+  //     } else{
+  //       secondCheck = true;
+  //     }
+  //   if(mode != 3){
+  //     break;
+  //   }
+  // }
 }
 
 
 void movingMode(){
   while(true){
-        updateReadings();
-        showReadings() ;
-        if(!zone1NoPen || (!zone2NoPen&&!zone3NoPen)){
+    updateReadings();
+    // showReadings() ;
+    if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+      if(checkAgain()){
+        if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
           if(!errorStatus){
-          // publish mqtt error
-          publishMqtt(1);
-          errorStatus =1;
+            //publish mqtt
+            publishMqtt(1);
+            errorStatus = 1;
           }
         }
-        // if(zone1NoPen && ((!zone2NoPen&&zone3NoPen) || (zone2NoPen&&!zone3NoPen))){
-        //   digitalWrite(errorPin, LOW);
-        // }
-        if(zone1NoPen && zone2NoPen && zone3NoPen){
-          // publish mqtt success
-          publishMqtt(0);
-          mode = 0;
-          break;
-        } 
-        if (mode != 2)
-          break;
+        secondCheck = true;
       }
+    } else{
+        secondCheck = true;
+    }  
+    if(zone1NoPen && zone2NoPen && zone3NoPen){
+      // publish mqtt success
+      publishMqtt(0);
+      mode = 0;
+      break;
+    }
+    if(mode != 2){
+    break;  
+    }
+  }
+  // while(true){
+  //       updateReadings();
+  //       showReadings() ;
+  //     if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+  //       if(checkAgain()){
+  //         if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+  //           if(!errorStatus){
+  //             //publish mqtt
+  //             publishMqtt(1);
+  //             errorStatus = 1;
+  //           }
+  //         }
+  //         secondCheck = true;
+  //     } else{
+  //         secondCheck = true;
+  //     }
+  //       // if(zone1NoPen && ((!zone2NoPen&&zone3NoPen) || (zone2NoPen&&!zone3NoPen))){
+  //       //   digitalWrite(errorPin, LOW);
+  //       // }
+  //       if(zone1NoPen && zone2NoPen && zone3NoPen){
+  //         // publish mqtt success
+  //         publishMqtt(0);
+  //         mode = 0;
+  //         break;
+  //       } 
+  //       if (mode != 2)
+  //         break;
+  //     }
 }
 
 void setup() {
