@@ -2,7 +2,6 @@ import paho.mqtt.client as mqtt
 from time import sleep
 import random, json, requests
 
-
 print("connected")
 req = requests.get("http://192.168.137.72:1111/api/v1/cart/start_cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco")
 print("request status: ", req.status_code)
