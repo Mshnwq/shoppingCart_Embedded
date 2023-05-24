@@ -327,7 +327,9 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     xQueueSend(xQueueScale, &docBuf, 0);
   }
   if (strcmp(mqtt_type, "update_mode") == 0) {
+      Serial.print("update mode: ");
       int mode = docBuf["mode"];
+      Serial.println(mode);
       updateMode(mode);
     }
     if (strcmp(mqtt_type, "alarm_detection") == 0)
@@ -352,8 +354,8 @@ void setup() {
   Serial.begin(9600);
   Serial.printf("CurrentMode: %d\n", currentMode);
   // updateMode(1);
-  // pinMode(26, OUTPUT);
-  // pinMode(27, OUTPUT);
+  pinMode(13, OUTPUT);
+  pinMode(12, OUTPUT);
   Serial.printf("New mode: %d\n", currentMode);
   Serial.printf("boot count : %d\n", bootCount);
   updateMode(0); // set cart mode to Locked
