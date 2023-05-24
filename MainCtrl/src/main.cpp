@@ -354,7 +354,7 @@ void setup() {
   Serial.begin(9600);
   Serial.printf("CurrentMode: %d\n", currentMode);
   // updateMode(1);
-  pinMode(13, OUTPUT);
+  pinMode(27, OUTPUT);
   pinMode(12, OUTPUT);
   Serial.printf("New mode: %d\n", currentMode);
   Serial.printf("boot count : %d\n", bootCount);

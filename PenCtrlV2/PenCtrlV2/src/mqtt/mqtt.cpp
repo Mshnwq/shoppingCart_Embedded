@@ -65,8 +65,14 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       process = docBuf["process"];
       item_barcode = docBuf["item_barcode"];
     }
-    if ((strcmp(mqtt_type, "update_mode") == 0) && (strcmp(docBuf["status"], "2") == 0)) {
+    if ((strcmp(mqtt_type, "update_mode") == 0) && (strcmp(docBuf["mode"], "2") == 0)) {
         mode = 1; // when reciving add item request update pentration mode to weighing
+    }
+    if ((strcmp(mqtt_type, "update_mode") == 0) && (strcmp(docBuf["mode"], "1") == 0)) {
+        mode = 0; // when reciving add item request update pentration mode to weighing
+    }
+    if ((strcmp(mqtt_type, "update_mode") == 0) && (strcmp(docBuf["mode"], "0") == 0)) {
+        mode = 5; // when reciving add item request update pentration mode to weighing
     }
     if ((strcmp(mqtt_type, "response_add_item") == 0) && (strcmp(docBuf["status"], "item_not_found") == 0)) {
         mode = 0; // when item was not found set mode back to active

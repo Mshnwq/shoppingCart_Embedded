@@ -23,6 +23,7 @@ void enableModeTasks(int mode){
         // vTaskSuspend(resetHandle);
         // vTaskSuspend(mpuHandle);
         activateLock();
+        deactivateBuz();
         break;
       case 1:
         // active tasks
@@ -35,7 +36,8 @@ void enableModeTasks(int mode){
         break;
       case 2:
         // weighing tasks
-        activateLock(); 
+        activateLock();
+        deactivateBuz();
         // vTaskResume(penetHandle);
         // vTaskResume(scaleHandle);
         // vTaskResume(resetHandle);
