@@ -15,7 +15,7 @@ void enableModeTasks(int mode){
     switch (mode) {
       case 0:
         // locked tasks
-        vTaskResume(sleepHandle);
+        // vTaskResume(sleepHandle);
         workTime = time(NULL);
         // vTaskSuspend(scaleHandle);
         // vTaskSuspend(alarmHandle);
@@ -49,23 +49,23 @@ void enableModeTasks(int mode){
         break;
       case 6:
         // paid tasks
-        vTaskSuspend(resetHandle);
-        vTaskSuspend(scaleHandle);
-        vTaskSuspend(breakHandle);
-        vTaskSuspend(alarmHandle);
-        vTaskSuspend(resetHandle);
-        vTaskSuspend(mpuHandle);
-        vTaskResume(breakHandle);
+        // vTaskSuspend(resetHandle);
+        // vTaskSuspend(scaleHandle);
+        // vTaskSuspend(breakHandle);
+        // vTaskSuspend(alarmHandle);
+        // vTaskSuspend(resetHandle);
+        // vTaskSuspend(mpuHandle);
+        // vTaskResume(breakHandle);
         break;
       case 7:
         // paid tasks
-        vTaskSuspend(resetHandle);
-        vTaskSuspend(scaleHandle);
-        vTaskSuspend(breakHandle);
-        vTaskSuspend(alarmHandle);
-        vTaskSuspend(resetHandle);
-        vTaskSuspend(mpuHandle);
-        vTaskResume(penetHandle);
+        // vTaskSuspend(resetHandle);
+        // vTaskSuspend(scaleHandle);
+        // vTaskSuspend(breakHandle);
+        // vTaskSuspend(alarmHandle);
+        // vTaskSuspend(resetHandle);
+        // vTaskSuspend(mpuHandle);
+        // vTaskResume(penetHandle);
         break;
     }
 }

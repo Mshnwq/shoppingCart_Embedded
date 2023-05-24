@@ -5,9 +5,9 @@
 #ifndef SCALE_H
 #define SCALE_H
 
-// // pins:
-extern int DOUT_PIN;     // mcu > HX711 dout pin
-extern int SCK_PIN;      // mcu > HX711 sck pin
+// // scale pins:
+extern const int DOUT_PIN;     // mcu > HX711 dout pin
+extern const int SCK_PIN;      // mcu > HX711 sck pin
 // extern int NUM_READINGS; // This is the number of readings that will be used to get an average weight
 
 // // HX711 constructor:

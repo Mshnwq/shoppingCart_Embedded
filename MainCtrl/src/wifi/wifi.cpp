@@ -25,12 +25,12 @@ void reconnect(void *pvParameters){
         WiFi.begin(WIFI_SSID, WIFI_PASS);
         while (WiFi.status() != WL_CONNECTED)
         {
-            delay(1000);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
             Serial.println("Connecting to WiFi...");
         }
         Serial.println("Connected to WiFi");
     }
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
     // boolean wifiSetup()

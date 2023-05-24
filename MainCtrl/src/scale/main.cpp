@@ -1,7 +1,7 @@
 #include "main.h"
 // pins:
-// const int DOUT_PIN = 16;     // mcu > HX711 dout pin
-// const int SCK_PIN = 17;      // mcu > HX711 sck pin
+const int DOUT_PIN = 16;     // mcu > HX711 dout pin
+const int SCK_PIN = 17;      // mcu > HX711 sck pin
 const int NUM_READINGS = 30; // This is the number of readings that will be used to get an average weight
 
 const int CV_ADDRESS = 0; // EEPROM address

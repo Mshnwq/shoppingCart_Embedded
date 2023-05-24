@@ -11,7 +11,7 @@ boolean wifiSetup(){
     }
     if( WiFi.status() != WL_CONNECTED){
         Serial.println("failed to connect");
-        // ESP.restart();
+        ESP.restart();
     }
     Serial.println("Wifi Connected!");
     return true;

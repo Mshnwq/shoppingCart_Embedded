@@ -134,7 +134,7 @@ void showReadings(){
 void normalMode(){
   while(true){
     updateReadings();
-    // showReadings() ;
+    showReadings() ;
     if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
       if(checkAgain()){
         if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
@@ -313,9 +313,10 @@ void movingMode(){
 void setup() {
   pinMode(errorPin, OUTPUT);
   // connect wifit
+  Serial.begin(9600); // Open serial monitor at 115200 baud to see ping results.
+  Serial.println("hello world");
   wifiSetup();
   mqttSetup();
-  Serial.begin(9600); // Open serial monitor at 115200 baud to see ping results.
   delay(75);
 }
 

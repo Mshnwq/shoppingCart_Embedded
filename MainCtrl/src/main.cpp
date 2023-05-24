@@ -43,8 +43,8 @@ TaskHandle_t sleepHandle;
 QueueHandle_t xQueuePenet;
 QueueHandle_t xQueueScale;
 
-int DOUT_PIN = 16; // mcu > HX711 dout pin
-int SCK_PIN = 17;
+// int DOUT_PIN = 16; // mcu > HX711 dout pin
+// int SCK_PIN = 17;
 // LED Pin
 static const int led_red = 12;
 static const int led_blu = 14;
@@ -55,7 +55,7 @@ static const int blink_rate = 2000;  // ms
 
 
 // MQTT broker details
-const char *BROKER = "192.168.22.66";
+const char *BROKER = "192.168.55.66";
 // const char *BROKER = "192.168.137.72";
 const int BROKER_PORT = 1883;
 const int HTTP_PORT = 1111;
@@ -344,8 +344,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
 // }
 // Create an instance of the SerialDebug library
 void setup() {
-  pinMode(GPIO_NUM_14, INPUT);
-  pinMode(GPIO_NUM_26, OUTPUT);
+  pinMode(GPIO_NUM_14, INPUT); // interrupt mode input
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_14,0); //1 = High, 0 = Low
   // Attach interrupt to the handleInterrupt function
   // attachInterrupt(digitalPinToInterrupt(GPIO_NUM_14), handleInterrupt,LOW);
@@ -353,63 +352,63 @@ void setup() {
   Serial.begin(9600);
   Serial.printf("CurrentMode: %d\n", currentMode);
   // updateMode(1);
-  pinMode(26, OUTPUT);
-  pinMode(27, OUTPUT);
+  // pinMode(26, OUTPUT);
+  // pinMode(27, OUTPUT);
   Serial.printf("New mode: %d\n", currentMode);
   Serial.printf("boot count : %d\n", bootCount);
-  // updateMode(0); // set cart mode to Locked
-  // wifiSetup(); // connect to wifi
-  // mpuSetup();
-  if(bootCount ==1){
-    // scaleSetup(); // scale setup
-  }
+  updateMode(0); // set cart mode to Locked
+  wifiSetup(); // connect to wifi
+  mpuSetup();
+  scaleSetup(); // scale setup
+  // if(bootCount ==1){
+  // }
 
   // // Connect Cart to the Backend using HTTP request
-  // httpClient.get("/api/v1/cart/start_cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco");
+  httpClient.get("/api/v1/cart/start_cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco");
 
   // // read the status code and body of the response
-  // int statusCode = httpClient.responseStatusCode();
-  // String response = httpClient.responseBody();
+  int statusCode = httpClient.responseStatusCode();
+  String response = httpClient.responseBody();
 
-  // const size_t capacity = JSON_OBJECT_SIZE(8) + 8*120;
-  // DynamicJsonDocument doc(capacity);
-  // DeserializationError error = deserializeJson(doc, response);
+  const size_t capacity = JSON_OBJECT_SIZE(8) + 8*120;
+  DynamicJsonDocument doc(capacity);
+  DeserializationError error = deserializeJson(doc, response);
 
-  // if(statusCode == 200){
-  //   if (error)
-  //   {
-  //     Serial.print("deserializeJson() failed: ");
-  //     Serial.println(error.f_str());
-  //   }
-  //   else
-  //   {
-  //     const char *token = doc["token"];
-  //     strcpy(TOPIC_PUB, "/cart/");
-  //     strcpy(TOPIC_SUB, "/cart/");
-  //     strcat(TOPIC_PUB, token);
-  //     strcat(TOPIC_SUB, token);
-  //   }
-  // }else
-  //   Serial.println("Failed to connect Cart to Backend.");
-  // // connect to MQTT broker
-  // mqttClient.setServer(BROKER, BROKER_PORT);
-  // mqttClient.setCallback(mqttCallback);
-  // while (!mqttClient.connected())
-  // {
-  //   if (mqttClient.connect("ESP32Client"))
-  //   {
-  //     Serial.println("Connected to MQTT broker.");
-  //     mqttClient.subscribe(TOPIC_SUB);
-  //     Serial.println("Subscribed to: ");
-  //     Serial.println(TOPIC_SUB);
-  //   }
-  //   else
-  //   {
-  //     Serial.print("Failed to connect to MQTT broker, rc=");
-  //     Serial.println(mqttClient.state());
-  //     delay(1000);
-  //   }
-  // }
+  if(statusCode == 200){
+    if (error)
+    {
+      Serial.print("deserializeJson() failed: ");
+      Serial.println(error.f_str());
+    }
+    else
+    {
+      const char *token = doc["token"];
+      strcpy(TOPIC_PUB, "/cart/");
+      strcpy(TOPIC_SUB, "/cart/");
+      strcat(TOPIC_PUB, token);
+      strcat(TOPIC_SUB, token);
+    }
+  }else
+    Serial.println("Failed to connect Cart to Backend.");
+  // connect to MQTT broker
+  mqttClient.setServer(BROKER, BROKER_PORT);
+  mqttClient.setCallback(mqttCallback);
+  while (!mqttClient.connected())
+  {
+    if (mqttClient.connect("ESP32Client"))
+    {
+      Serial.println("Connected to MQTT broker.");
+      mqttClient.subscribe(TOPIC_SUB);
+      Serial.println("Subscribed to: ");
+      Serial.println(TOPIC_SUB);
+    }
+    else
+    {
+      Serial.print("Failed to connect to MQTT broker, rc=");
+      Serial.println(mqttClient.state());
+      delay(1000);
+    }
+  }
   // xTaskCreatePinnedToCore(mqtt, "Mqtt client", 4096, NULL, 1, NULL, 1);
   // xTaskCreatePinnedToCore(mpuTask, "Accelerometer Task", 4096, NULL, 1, &mpuHandle, 1);
   // xTaskCreatePinnedToCore(breakTask, "Break Task", 1024, NULL, 1, &breakHandle, 1);
@@ -453,9 +452,17 @@ void setup() {
       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
       &resetHandle,        // Task handle
       1);                  // Run on one core for demo purposes (ESP32 only)
+    // xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
+    //   sleepESP,           // Function to be called
+    //   "Keep scale synced with registers",        // Name of task
+    //   1024,                // Stack size (bytes in ESP32, words in FreeRTOS)
+    //   NULL,                // Parameter to pass to function
+    //   1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
+    //   &sleepHandle,        // Task handle
+    //   1);                  // Run on one core for demo purposes (ESP32 only)
     xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
-      sleepESP,           // Function to be called
-      "Keep scale synced with registers",        // Name of task
+      reconnect,           // Function to be called
+      "wifi reconnect if disconnected",        // Name of task
       1024,                // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,                // Parameter to pass to function
       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
