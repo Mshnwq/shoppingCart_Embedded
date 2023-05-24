@@ -24,7 +24,7 @@ void mqttSetup(){
   mqttClient.setCallback(mqttCallback);
   while (!mqttClient.connected())
   {
-    if (mqttClient.connect("ESP32Client"))
+    if (mqttClient.connect("ESP32-1-Client"))
     {
       Serial.println("Connected to MQTT broker.");
       mqttClient.subscribe(TOPIC_SUB);
@@ -42,16 +42,16 @@ void mqttSetup(){
 // callback function for receiving MQTT messages
 void mqttCallback(char *topic, byte *payload, unsigned int length)
 {
-//   Serial.print("Message received [");
-//   Serial.print(topic);
-//   Serial.print("]: ");
+  Serial.print("Message received [");
+  Serial.print(topic);
+  Serial.print("]: ");
 
-//   for (int i = 0; i < length; i++)
-//   {
-//     Serial.print((char)payload[i]);
-//   }
+  for (int i = 0; i < length; i++)
+  {
+    Serial.print((char)payload[i]);
+  }
 
-//   Serial.println();
+  Serial.println();
   DeserializationError error = deserializeJson(docBuf, payload, length);
   if (error)
   {
@@ -79,6 +79,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     }
     if((strcmp(mqtt_type, "alarm_detection") == 0) && (docBuf["trigger"] == false)){
       errorStatus = 0; // reset the error flag
+      Serial.println("reset flag");
     }
     if((strcmp(mqtt_type, "request_remove_item") == 0)){
       mode = 3; // first stage of remove item penetration
@@ -93,10 +94,10 @@ void publishMqtt(int status){
     pub["mqtt_type"] = "penetration_data";
     pub["sender"] = "cart-slave-1";
     pub["status"] = status;
-    pub["process"] = "123";
-    pub["item_barcode"] = "123";
+    pub["process"] = process;
+    pub["item_barcode"] = item_barcode;
     String jsonString;
-    // serializeJson(pub, jsonString);
+    serializeJson(pub, jsonString);
     Serial.println(jsonString);
     const char *myChar = jsonString.c_str();
     mqttClient.publish(TOPIC_PUB, myChar);

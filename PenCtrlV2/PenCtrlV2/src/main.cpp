@@ -133,15 +133,20 @@ void showReadings(){
 
 void normalMode(){
   while(true){
+    mqttClient.loop();
+    Serial.print("error status = ");
+    Serial.println(errorStatus);
     updateReadings();
     showReadings() ;
+    Serial.println("normal mode");
     if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
       if(checkAgain()){
         if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
           if(!errorStatus){
             //publish mqtt
-            publishMqtt(1);
+            Serial.println("mqtt published");
             errorStatus = 1;
+            publishMqtt(1);
           }
         }
         secondCheck = true;
@@ -186,15 +191,17 @@ void normalMode(){
 
 void scaleMode(){
   while(true){
+    mqttClient.loop();
     updateReadings();
-    // showReadings() ;
+    showReadings() ;
     if(!zone2NoPen || !zone3NoPen){
       if(checkAgain()){
         if(!zone2NoPen || !zone3NoPen){
           if(!errorStatus){
             //publish mqtt
-            publishMqtt(1);
             errorStatus = 1;
+            publishMqtt(1);
+            
           }
         }
         secondCheck = true;
@@ -210,15 +217,16 @@ void scaleMode(){
 
 void removeItem(){
   while(true){
+    mqttClient.loop();
     updateReadings();
-    // showReadings() ;
+    showReadings() ;
     if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
       if(checkAgain()){
         if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
           if(!errorStatus){
             //publish mqtt
-            publishMqtt(1);
             errorStatus = 1;
+            publishMqtt(1);
           }
         }
         secondCheck = true;
@@ -254,15 +262,16 @@ void removeItem(){
 
 void movingMode(){
   while(true){
+    mqttClient.loop();
     updateReadings();
-    // showReadings() ;
+    showReadings() ;
     if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
       if(checkAgain()){
         if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
           if(!errorStatus){
             //publish mqtt
-            publishMqtt(1);
             errorStatus = 1;
+            publishMqtt(1);
           }
         }
         secondCheck = true;
@@ -314,30 +323,43 @@ void setup() {
   pinMode(errorPin, OUTPUT);
   // connect wifit
   Serial.begin(9600); // Open serial monitor at 115200 baud to see ping results.
-  Serial.println("hello world");
   wifiSetup();
   mqttSetup();
+  mode =0;
   delay(75);
 }
 
 void loop() {
+  mqttClient.loop();
   updateReadings();
   showReadings() ;
+  Serial.print("Mode is: ");
+  Serial.println(mode);
   switch (mode)
   {
   case 0:
+    Serial.print("Mode is: ");
+    Serial.println(mode);
     normalMode();
     break;
   case 1:
+    Serial.print("Mode is: ");
+    Serial.println(mode);
     scaleMode();
     break;
   case 2:
+    Serial.print("Mode is: ");
+    Serial.println(mode);
     movingMode();
     break;
   case 3:
+    Serial.print("Mode is: ");
+    Serial.println(mode);
     removeItem();
     break;
   default:
+    Serial.print("Mode is: ");
+    Serial.println(mode);
     break;
   }
 }
