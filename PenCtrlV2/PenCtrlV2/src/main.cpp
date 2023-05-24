@@ -191,6 +191,9 @@ void normalMode(){
 
 void scaleMode(){
   while(true){
+    Serial.print("error status = ");
+    Serial.println(errorStatus);
+    Serial.println("scale mode");
     mqttClient.loop();
     updateReadings();
     showReadings() ;
@@ -218,6 +221,9 @@ void scaleMode(){
 void removeItem(){
   while(true){
     mqttClient.loop();
+    Serial.print("error status = ");
+    Serial.println(errorStatus);
+    Serial.println("remove mode");
     updateReadings();
     showReadings() ;
     if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
@@ -263,6 +269,9 @@ void removeItem(){
 void movingMode(){
   while(true){
     mqttClient.loop();
+    Serial.print("error status = ");
+    Serial.println(errorStatus);
+    Serial.println("moving mode");
     updateReadings();
     showReadings() ;
     if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
