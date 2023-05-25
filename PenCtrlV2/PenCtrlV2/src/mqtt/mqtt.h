@@ -25,4 +25,4 @@ extern char* process;
 extern char* item_barcode;
 void mqttCallback(char *topic, byte *payload, unsigned int length);
 void mqttSetup();
-void publishMqtt(int status, char *proc = "add");
+void publishMqtt(int status,  int type = 0);

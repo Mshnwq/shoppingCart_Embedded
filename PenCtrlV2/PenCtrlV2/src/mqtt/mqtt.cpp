@@ -121,13 +121,14 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
   }
 
 // status 0 = success, 1 = error, final succ
-void publishMqtt(int status, char *proc = "add"){
+void publishMqtt(int status, int type){
     // const char *currentProc = process;
     // const char *currentItem = item_barcode;
     StaticJsonDocument<256> pub;
     pub["mqtt_type"] = "penetration_data";
+    // type =0; add; type =1 remove;
     if(!status)
-      pub["process"] = proc;
+      pub["process"] = !type ? "add" : "remove";
     pub["sender"] = "cart-slave-1";
     pub["status"] = status;
     // pub["process"] = process;
