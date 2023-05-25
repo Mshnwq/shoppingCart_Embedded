@@ -82,13 +82,19 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       mode = 2; // weghing mode status (penetration allowed in weghing area)
       errorStatus = 0;
     }
-    if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0))
+    if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0)){
       mode = 3; // moving mode (penetration only one area)
-    if ((strcmp(mqtt_type, "response_add_item") == 0) && (strcmp(docBuf["status"], "item_not_found") == 0)) 
+      errorStatus = 0;
+    }
+    if ((strcmp(mqtt_type, "response_add_item") == 0) && (strcmp(docBuf["status"], "item_not_found") == 0)){
       mode = 1; // when item was not found set mode back to active
-    if((strcmp(mqtt_type, "request_remove_item") == 0))
+      errorStatus = 0;
+    }
+    if((strcmp(mqtt_type, "request_start_remove_item") == 0)){
       mode = 4; // first stage of remove item penetration
-
+      errorStatus = 0;
+    }
+    
     // if (strcmp(mqtt_type, "check_weight") == 0) {
     //   process = docBuf["process"];
     //   item_barcode = docBuf["item_barcode"];

@@ -233,7 +233,7 @@ void removeItem(){
       if(checkAgain()){
         if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
           if(!errorStatus){
-            //publish mqtt
+            //publish mqtt erroor
             errorStatus = 1;
             publishMqtt(1);
           }
@@ -247,6 +247,7 @@ void removeItem(){
       if(checkAgain()){
         if(zone1NoPen && zone2NoPen && zone3NoPen){
           if(!errorStatus){
+            // error
             errorStatus = 1;
             publishMqtt(1);
           }
