@@ -44,16 +44,14 @@ void enableModeTasks(int mode){
         break;
         case 3:
           // weighing tasks
-          activateLock();
-          deactivateBuz();
+          deactivateLockWithBuz();
           // vTaskResume(penetHandle);
           // vTaskResume(scaleHandle);
           // vTaskResume(resetHandle);
           break;
         case 4:
           // weighing tasks
-          activateLock();
-          deactivateBuz();
+          deactivateLockWithBuz();
           // vTaskResume(penetHandle);
           // vTaskResume(scaleHandle);
           // vTaskResume(resetHandle);

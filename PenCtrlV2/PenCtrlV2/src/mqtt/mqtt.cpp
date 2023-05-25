@@ -60,11 +60,11 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     return;
   }
   const char *mqtt_type = docBuf["mqtt_type"]; // Assuming the payload contains a field named "message"
-    if (strcmp(mqtt_type, "update_status") == 0 && (strcmp(docBuf["status"], "0") == 0))
+    if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 0))
       mode = 0; // ready status (penetration allowed all placees)
-    if (strcmp(mqtt_type, "update_status") == 0 && (strcmp(docBuf["status"], "1") == 0))
+    if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 1))
       mode = 1; // active status (no penetration allowed)
-    if (strcmp(mqtt_type, "update_status") == 0 && (strcmp(docBuf["status"], "2") == 0))
+    if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 2))
       mode = 2; // weghing mode status (penetration allowed in weghing area)
     if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0))
       mode = 3; // moving mode (penetration only one area)
