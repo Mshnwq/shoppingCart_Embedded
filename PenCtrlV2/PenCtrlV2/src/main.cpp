@@ -14,7 +14,7 @@
 #define sucessPin 27
 #define releasePin 15
 
-long delayCheck = 1000;
+long delayCheck = 650;
 bool secondCheck = true;
 long checkTime = millis();
 
@@ -242,7 +242,26 @@ void removeItem(){
       }
     } else{
         secondCheck = true;
-    }  
+    }
+    if(zone1NoPen && zone2NoPen && zone3NoPen){
+      if(checkAgain()){
+        if(zone1NoPen && zone2NoPen && zone3NoPen){
+          if(!errorStatus){
+            errorStatus = 1;
+            publishMqtt(1);
+          }
+        }
+        secondCheck = true;
+      }
+    } else{
+        secondCheck = true;
+    }
+    // if(zone1NoPen && zone2NoPen && zone3NoPen){
+    //   // publish mqtt success
+    //   publishMqtt(1);
+    //   mode = 0;
+    //   break;
+    // }  
     if(mode != 4){
     break;  
     }
@@ -292,12 +311,25 @@ void movingMode(){
     } else{
         secondCheck = true;
     }  
+
     if(zone1NoPen && zone2NoPen && zone3NoPen){
-      // publish mqtt success
-      publishMqtt(0);
-      mode = 0;
-      break;
+      if(checkAgain()){
+        if(zone1NoPen && zone2NoPen && zone3NoPen){
+          publishMqtt(0);
+          mode = 0;
+          break;
+        }
+        secondCheck = true;
+      }
+    } else{
+        secondCheck = true;
     }
+    // if(zone1NoPen && zone2NoPen && zone3NoPen){
+    //   // publish mqtt success
+    //   publishMqtt(0);
+    //   mode = 0;
+    //   break;
+    // }s
     if(mode != 3){
     break;  
     }

@@ -60,15 +60,28 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     return;
   }
   const char *mqtt_type = docBuf["mqtt_type"]; // Assuming the payload contains a field named "message"
-  if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 5))
+  if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 5)){
+      mode = 0;
       errorStatus = 1;
+  }
     if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 0))
       mode = 0; // ready status (penetration allowed all placees)
-    if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 1))
+    if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 1)){
+      errorStatus = 0;
       mode = 1; // active status (no penetration allowed)
-    if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 2))
+    }
+    if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 3)){
+      errorStatus = 0;
+      mode = 1; // active status (no penetration allowed)
+    }
+    if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 4)){
+      errorStatus = 0;
+      mode = 1; // active status (no penetration allowed)
+    }
+    if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 2)){
       mode = 2; // weghing mode status (penetration allowed in weghing area)
       errorStatus = 0;
+    }
     if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0))
       mode = 3; // moving mode (penetration only one area)
     if ((strcmp(mqtt_type, "response_add_item") == 0) && (strcmp(docBuf["status"], "item_not_found") == 0)) 
