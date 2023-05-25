@@ -21,8 +21,8 @@ extern PubSubClient mqttClient; // mqttt client
 extern StaticJsonDocument<256> docBuf;
 extern int errorStatus; // Error flag
 extern int mode; // initial mode 
-extern const char* process;
-extern const char* item_barcode;
+extern char* process;
+extern char* item_barcode;
 void mqttCallback(char *topic, byte *payload, unsigned int length);
 void mqttSetup();
 void publishMqtt(int status);

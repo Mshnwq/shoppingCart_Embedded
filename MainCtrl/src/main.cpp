@@ -202,7 +202,7 @@ void scaleTask(void *pvParameters) {
       mqttClient.publish(TOPIC_PUB, myChar);
       Serial.println("send pass to mqtt");
     }
-    else if(comp <= 5){
+    else if(comp <= 15){
       // Create a JSON object
        pub["status"] = "pass";
        // Serialize the JSON object to a string
@@ -326,18 +326,18 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     // vTaskResume(mpuHandle); 
     xQueueSend(xQueueScale, &docBuf, 0);
   }
-  if (strcmp(mqtt_type, "update_mode") == 0) {
+  if (strcmp(mqtt_type, "update_status") == 0) {
       Serial.print("update mode: ");
-      int mode = docBuf["mode"];
+      int mode = docBuf["status"];
       Serial.println(mode);
       updateMode(mode);
     }
-    if (strcmp(mqtt_type, "alarm_detection") == 0)
-    {
-      boolean alarm = docBuf["trigger"];
-      if(alarm)
-        updateMode(4);
-    }
+    // if (strcmp(mqtt_type, "alarm_detection") == 0)
+    // {
+    //   boolean alarm = docBuf["trigger"];
+    //   if(alarm)
+    //     updateMode(4);
+    // }
   }
 // void IRAM_ATTR handleInterrupt() {
 //   Serial.println("wakeup...!");

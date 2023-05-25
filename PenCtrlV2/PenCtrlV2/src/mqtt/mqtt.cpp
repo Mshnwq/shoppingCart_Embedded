@@ -16,8 +16,8 @@ PubSubClient mqttClient(wifiClient); // mqttt client
 StaticJsonDocument<256> docBuf;
 int errorStatus = 0; // Error flag
 int mode = 1; // initial mode 
-const char* process;
-const char* item_barcode;
+char* process;
+char* item_barcode;
 void mqttSetup(){
 //     // subscribe to mqtt broker
   mqttClient.setServer(BROKER, BROKER_PORT);
@@ -60,7 +60,20 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     return;
   }
   const char *mqtt_type = docBuf["mqtt_type"]; // Assuming the payload contains a field named "message"
+    if (strcmp(mqtt_type, "update_status") == 0 && (strcmp(docBuf["status"], "0") == 0))
+      mode = 0; // ready status (penetration allowed all placees)
+    if (strcmp(mqtt_type, "update_status") == 0 && (strcmp(docBuf["status"], "1") == 0))
+      mode = 1; // active status (no penetration allowed)
+    if (strcmp(mqtt_type, "update_status") == 0 && (strcmp(docBuf["status"], "2") == 0))
+      mode = 2; // weghing mode status (penetration allowed in weghing area)
+    if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0))
+      mode = 3; // moving mode (penetration only one area)
+    if ((strcmp(mqtt_type, "response_add_item") == 0) && (strcmp(docBuf["status"], "item_not_found") == 0)) 
+      mode = 1; // when item was not found set mode back to active
+    
 
+    if((strcmp(mqtt_type, "request_remove_item") == 0))
+      mode = 4; // first stage of remove item penetration
     if (strcmp(mqtt_type, "check_weight") == 0) {
       process = docBuf["process"];
       item_barcode = docBuf["item_barcode"];
@@ -70,12 +83,6 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     }
     if ((strcmp(mqtt_type, "update_mode") == 0) && (strcmp(docBuf["mode"], "1") == 0)) {
         mode = 0; // when reciving add item request update pentration mode to weighing
-    }
-    if ((strcmp(mqtt_type, "update_mode") == 0) && (strcmp(docBuf["mode"], "0") == 0)) {
-        mode = 5; // when reciving add item request update pentration mode to weighing
-    }
-    if ((strcmp(mqtt_type, "response_add_item") == 0) && (strcmp(docBuf["status"], "item_not_found") == 0)) {
-        mode = 0; // when item was not found set mode back to active
     }
     if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "fail") == 0)){
       mode = 0; // when scale readings doesn't match role back to active mode
@@ -100,8 +107,8 @@ void publishMqtt(int status){
     pub["mqtt_type"] = "penetration_data";
     pub["sender"] = "cart-slave-1";
     pub["status"] = status;
-    pub["process"] = process;
-    pub["item_barcode"] = item_barcode;
+    // pub["process"] = process;
+    // pub["item_barcode"] = item_barcode;
     String jsonString;
     serializeJson(pub, jsonString);
     Serial.println(jsonString);
