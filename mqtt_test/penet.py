@@ -1,6 +1,6 @@
 import paho.mqtt.client as mqtt
 from time import sleep
-import json, time
+import json, time, requests
 
 topic = "/cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco"
 
@@ -28,14 +28,15 @@ def add_pressed():
     client.publish(topic, json.dumps(request))
 
 def update_pressed(mode: str):
+    requests.post(f'http://192.168.55.66:1111/api/v1/cart/update_status/123/{mode}');
     # Perform action for button 2 press
-    request = {
-        'mqtt_type': 'update_mode',
-        'sender': 'user-1',
-        'mode': mode,
-        'timestamp': int(time.time())
-    }
-    client.publish(topic, json.dumps(request))
+    # request = {
+        # 'mqtt_type': 'update_mode',
+        # 'sender': 'user-1',
+        # 'mode': mode,
+        # 'timestamp': int(time.time())
+    # }
+    # client.publish(topic, json.dumps(request))
 
 # MQTT client setup
 client = mqtt.Client(client_id="user-1")
@@ -55,7 +56,7 @@ while button != 'q':
     
     if button == 'a':
         add_pressed()
-    elif button in ['0', '1','2', '3', '4', '5'] :
+    elif button in ['-1', '0', '1','2', '3', '4', '5', '6'] :
         update_pressed(button)
     else:
         print("Invalid button")
