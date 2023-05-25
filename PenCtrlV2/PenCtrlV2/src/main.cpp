@@ -155,7 +155,7 @@ void normalMode(){
     } else{
         secondCheck = true;
     }  
-    if(mode != 0){
+    if(mode != 1){
     break;  
     }
   }
@@ -214,7 +214,7 @@ void scaleMode(){
     } else{
         secondCheck = true;
     }  
-    if(mode != 1){
+    if(mode != 2){
     break;  
     }
   }
@@ -243,7 +243,7 @@ void removeItem(){
     } else{
         secondCheck = true;
     }  
-    if(mode != 3){
+    if(mode != 4){
     break;  
     }
   }
@@ -298,7 +298,7 @@ void movingMode(){
       mode = 0;
       break;
     }
-    if(mode != 2){
+    if(mode != 3){
     break;  
     }
   }
