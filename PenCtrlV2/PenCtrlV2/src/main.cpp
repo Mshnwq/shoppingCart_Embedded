@@ -14,14 +14,14 @@
 #define sucessPin 27
 #define releasePin 15
 
-long delayCheck = 300;
+long delayCheck = 1000;
 bool secondCheck = true;
 long checkTime = millis();
 
 NewPing sonar[SONAR_NUM] = {   // Sensor object array
   // Each sensor's trigger pin, echo pin, and max distance to ping
   NewPing(oddPin, 19, MAX_DISTANCE), 
-  NewPing(evenPin, 14, MAX_DISTANCE),
+  NewPing(evenPin, 14, 35),
   NewPing(oddPin, 18, MAX_DISTANCE), 
   NewPing(evenPin, 12, MAX_DISTANCE),
   NewPing(oddPin, 5, MAX_DISTANCE), 
