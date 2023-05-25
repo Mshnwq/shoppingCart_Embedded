@@ -17,6 +17,7 @@
 long delayCheck = 650;
 bool secondCheck = true;
 long checkTime = millis();
+bool stopIf = false;
 
 NewPing sonar[SONAR_NUM] = {   // Sensor object array
   // Each sensor's trigger pin, echo pin, and max distance to ping
@@ -221,50 +222,69 @@ void scaleMode(){
 }
 
 void removeItem(){
+ 
   while(true){
-    mqttClient.loop();
-    Serial.print("error status = ");
-    Serial.println(errorStatus);
-    Serial.print("mode is: ");
-    Serial.println(mode);
-    updateReadings();
-    showReadings() ;
-    if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
-      if(checkAgain()){
-        if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
-          if(!errorStatus){
-            //publish mqtt
-            errorStatus = 1;
-            publishMqtt(1);
-          }
-        }
-        secondCheck = true;
+    if((!zone1NoPen || !zone2NoPen || !zone3NoPen) || stopIf ){
+      if(!stopIf){
+        stopIf = true;
       }
-    } else{
-        secondCheck = true;
-    }
-    if(zone1NoPen && zone2NoPen && zone3NoPen){
-      if(checkAgain()){
-        if(zone1NoPen && zone2NoPen && zone3NoPen){
-          if(!errorStatus){
-            errorStatus = 1;
-            publishMqtt(1);
+      mqttClient.loop();
+      Serial.print("error status = ");
+      Serial.println(errorStatus);
+      Serial.print("mode is: ");
+      Serial.println(mode);
+      updateReadings();
+      showReadings() ;
+      if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+        if(checkAgain()){
+          if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+            if(!errorStatus){
+              //publish mqtt
+              errorStatus = 1;
+              publishMqtt(1);
+            }
           }
+          secondCheck = true;
         }
-        secondCheck = true;
+      } else{
+          secondCheck = true;
       }
-    } else{
-        secondCheck = true;
+      if(zone1NoPen && zone2NoPen && zone3NoPen){
+        if(checkAgain()){
+          if(zone1NoPen && zone2NoPen && zone3NoPen){
+            if(!errorStatus){
+              errorStatus = 1;
+              publishMqtt(1);
+            }
+          }
+          secondCheck = true;
+        }
+      } else{
+          secondCheck = true;
+      }
+      
+      if(!zone1NoPen && zone2NoPen && zone3NoPen){
+        if(checkAgain()){
+          if(!zone1NoPen && zone2NoPen && zone3NoPen){
+              publishMqtt(0);
+              Serial.println("Removing success MQTT sent");
+          }
+          secondCheck = true;
+        }
+      } else{
+          secondCheck = true;
+      }
+      // if(zone1NoPen && zone2NoPen && zone3NoPen){
+      //   // publish mqtt success
+      //   publishMqtt(1);
+      //   mode = 0;
+      //   break;
+      // }
+      }
+      if(mode != 4){
+      break;  
     }
-    // if(zone1NoPen && zone2NoPen && zone3NoPen){
-    //   // publish mqtt success
-    //   publishMqtt(1);
-    //   mode = 0;
-    //   break;
-    // }  
-    if(mode != 4){
-    break;  
-    }
+
   }
   // while(true){
   //   updateReadings();
@@ -402,6 +422,7 @@ void loop() {
   case 4:
     Serial.print("Mode is: ");
     Serial.println(mode);
+    stopIf = false;
     removeItem();
     break;
   }
