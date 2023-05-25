@@ -1,7 +1,7 @@
 #include "mqtt.h"
 
 // Setup function for mqtt
-const char *BROKER = "192.168.55.66";
+const char *BROKER = "192.168.162.66";
 const int BROKER_PORT = 1883;
 
 // MQTT topics
@@ -70,33 +70,32 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       mode = 3; // moving mode (penetration only one area)
     if ((strcmp(mqtt_type, "response_add_item") == 0) && (strcmp(docBuf["status"], "item_not_found") == 0)) 
       mode = 1; // when item was not found set mode back to active
-    
-
     if((strcmp(mqtt_type, "request_remove_item") == 0))
       mode = 4; // first stage of remove item penetration
-    if (strcmp(mqtt_type, "check_weight") == 0) {
-      process = docBuf["process"];
-      item_barcode = docBuf["item_barcode"];
-    }
-    if ((strcmp(mqtt_type, "update_mode") == 0) && (strcmp(docBuf["mode"], "2") == 0)) {
-        mode = 1; // when reciving add item request update pentration mode to weighing
-    }
-    if ((strcmp(mqtt_type, "update_mode") == 0) && (strcmp(docBuf["mode"], "1") == 0)) {
-        mode = 0; // when reciving add item request update pentration mode to weighing
-    }
-    if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "fail") == 0)){
-      mode = 0; // when scale readings doesn't match role back to active mode
-    }
-    if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0)){
-      mode = 2; // when scale matches change to transient mode
-    }
-    if((strcmp(mqtt_type, "alarm_detection") == 0) && (docBuf["trigger"] == false)){
-      errorStatus = 0; // reset the error flag
-      Serial.println("reset flag");
-    }
-    if((strcmp(mqtt_type, "request_remove_item") == 0)){
-      mode = 3; // first stage of remove item penetration
-    }
+
+    // if (strcmp(mqtt_type, "check_weight") == 0) {
+    //   process = docBuf["process"];
+    //   item_barcode = docBuf["item_barcode"];
+    // }
+    // if ((strcmp(mqtt_type, "update_mode") == 0) && (strcmp(docBuf["mode"], "2") == 0)) {
+    //     mode = 1; // when reciving add item request update pentration mode to weighing
+    // }
+    // if ((strcmp(mqtt_type, "update_mode") == 0) && (strcmp(docBuf["mode"], "1") == 0)) {
+    //     mode = 0; // when reciving add item request update pentration mode to weighing
+    // }
+    // if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "fail") == 0)){
+    //   mode = 0; // when scale readings doesn't match role back to active mode
+    // }
+    // if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0)){
+    //   mode = 2; // when scale matches change to transient mode
+    // }
+    // if((strcmp(mqtt_type, "alarm_detection") == 0) && (docBuf["trigger"] == false)){
+    //   errorStatus = 0; // reset the error flag
+    //   Serial.println("reset flag");
+    // }
+    // if((strcmp(mqtt_type, "request_remove_item") == 0)){
+    //   mode = 3; // first stage of remove item penetration
+    // }
   }
 
 // status 0 = success, 1 = error, final succ
