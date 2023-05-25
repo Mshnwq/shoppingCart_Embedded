@@ -347,28 +347,26 @@ void loop() {
   switch (mode)
   {
   case 0:
-    Serial.print("Mode is: ");
-    Serial.println(mode);
-    normalMode();
     break;
   case 1:
     Serial.print("Mode is: ");
     Serial.println(mode);
-    scaleMode();
+    normalMode();
     break;
   case 2:
     Serial.print("Mode is: ");
     Serial.println(mode);
-    movingMode();
+    scaleMode();
     break;
   case 3:
     Serial.print("Mode is: ");
     Serial.println(mode);
-    removeItem();
+    movingMode();
     break;
-  default:
+  case 4:
     Serial.print("Mode is: ");
     Serial.println(mode);
+    removeItem();
     break;
   }
 }

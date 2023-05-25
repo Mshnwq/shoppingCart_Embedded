@@ -42,33 +42,36 @@ void enableModeTasks(int mode){
         // vTaskResume(scaleHandle);
         // vTaskResume(resetHandle);
         break;
-      case 4:
-        // alarm tasks
-        activateLockWithBuz();
-        break;
-      case 5:
-        
-        break;
-      case 6:
-        // paid tasks
-        // vTaskSuspend(resetHandle);
-        // vTaskSuspend(scaleHandle);
-        // vTaskSuspend(breakHandle);
-        // vTaskSuspend(alarmHandle);
-        // vTaskSuspend(resetHandle);
-        // vTaskSuspend(mpuHandle);
-        // vTaskResume(breakHandle);
-        break;
-      case 7:
-        // paid tasks
-        // vTaskSuspend(resetHandle);
-        // vTaskSuspend(scaleHandle);
-        // vTaskSuspend(breakHandle);
-        // vTaskSuspend(alarmHandle);
-        // vTaskSuspend(resetHandle);
-        // vTaskSuspend(mpuHandle);
-        // vTaskResume(penetHandle);
-        break;
+        case 3:
+          // weighing tasks
+          activateLock();
+          deactivateBuz();
+          // vTaskResume(penetHandle);
+          // vTaskResume(scaleHandle);
+          // vTaskResume(resetHandle);
+          break;
+        case 4:
+          // weighing tasks
+          activateLock();
+          deactivateBuz();
+          // vTaskResume(penetHandle);
+          // vTaskResume(scaleHandle);
+          // vTaskResume(resetHandle);
+          break;
+        case 5:
+          // alarm tasks
+          activateLockWithBuz();
+          break;
+        case 6:
+          // paid tasks
+          // vTaskSuspend(resetHandle);
+          // vTaskSuspend(scaleHandle);
+          // vTaskSuspend(breakHandle);
+          // vTaskSuspend(alarmHandle);
+          // vTaskSuspend(resetHandle);
+          // vTaskSuspend(mpuHandle);
+          // vTaskResume(breakHandle);
+          break;
     }
 }
 int getCurrentMode(){
