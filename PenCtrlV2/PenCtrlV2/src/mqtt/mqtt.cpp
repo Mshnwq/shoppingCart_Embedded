@@ -60,6 +60,8 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     return;
   }
   const char *mqtt_type = docBuf["mqtt_type"]; // Assuming the payload contains a field named "message"
+  if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 5))
+      errorStatus = 1;
     if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 0))
       mode = 0; // ready status (penetration allowed all placees)
     if (strcmp(mqtt_type, "update_status") == 0 && (docBuf["status"] == 1))
