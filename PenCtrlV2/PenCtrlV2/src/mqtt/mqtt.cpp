@@ -94,7 +94,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       mode = 4; // first stage of remove item penetration
       errorStatus = 0;
     }
-    
+
     // if (strcmp(mqtt_type, "check_weight") == 0) {
     //   process = docBuf["process"];
     //   item_barcode = docBuf["item_barcode"];
@@ -121,11 +121,13 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
   }
 
 // status 0 = success, 1 = error, final succ
-void publishMqtt(int status){
+void publishMqtt(int status, char *proc = "add"){
     // const char *currentProc = process;
     // const char *currentItem = item_barcode;
     StaticJsonDocument<256> pub;
     pub["mqtt_type"] = "penetration_data";
+    if(!status)
+      pub["process"] = proc;
     pub["sender"] = "cart-slave-1";
     pub["status"] = status;
     // pub["process"] = process;

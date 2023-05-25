@@ -263,7 +263,7 @@ void removeItem(){
         if(!zone1NoPen && zone2NoPen && zone3NoPen){
           if(checkAgain()){
             if(!zone1NoPen && zone2NoPen && zone3NoPen){
-                publishMqtt(0);
+                publishMqtt(0, "remove");
                 Serial.println("Removing success MQTT sent");
             }
             secondCheck = true;
@@ -324,7 +324,7 @@ void movingMode(){
           if(!errorStatus){
             //publish mqtt
             errorStatus = 1;
-            publishMqtt(1);
+            publishMqtt(1, "add");
           }
         }
         secondCheck = true;
