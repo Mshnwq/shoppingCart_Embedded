@@ -423,7 +423,6 @@ void loop() {
   case 4:
     Serial.print("Mode is: ");
     Serial.println(mode);
-    stopIf = false;
     removeItem();
     break;
   }
