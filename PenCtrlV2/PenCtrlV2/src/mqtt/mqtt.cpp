@@ -21,6 +21,7 @@ int errorStatus = 0; // Error flag
 int mode = 1; // initial mode 
 char* process;
 char* item_barcode;
+std::string barcode;
 void mqttSetup(){
 //     // subscribe to mqtt broker
   mqttClient.setServer(BROKER, BROKER_PORT);
@@ -94,7 +95,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       errorStatus = 0;
     }
     if((strcmp(mqtt_type, "request_start_remove_item") == 0)){
-      const char* item_barcode = docBuf["item_barcode"];
+      barcode = docBuf["item_barcode"];
       mode = 4; // first stage of remove item penetration
       errorStatus = 0;
     }
@@ -133,7 +134,7 @@ void publishMqtt(int status, int type){
     // type =0; add; type =1 remove;
     if(!status)
       pub["process"] = !type ? "add" : "remove";
-    pub["item_barcode"] = item_barcode;
+    pub["item_barcode"] = barcode;
     pub["sender"] = "cart-slave-1";
     pub["status"] = status;
     // pub["process"] = process;
