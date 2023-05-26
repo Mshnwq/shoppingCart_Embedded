@@ -13,11 +13,16 @@
 #define errorPin 26
 #define sucessPin 27
 #define releasePin 15
+#define checkAgainDelayMs 1000
 
-long delayCheck = 650;
-bool secondCheck = true;
-long checkTime = millis();
-bool alreadyChecking = false;
+// long delayCheck = 650;
+// bool secondCheck = true;
+// long checkTime = millis();
+// bool alreadyChecking = false;
+
+ SemaphoreHandle_t readWritePennMutex;
+ SemaphoreHandle_t errorPinMutex;
+ SemaphoreHandle_t modeWRMutex;
 
 NewPing sonar[SONAR_NUM] = {   // Sensor object array
   // Each sensor's trigger pin, echo pin, and max distance to ping
@@ -45,18 +50,19 @@ boolean nextZone = false;
 
 // confirms penetration
 
-int checkAgain(int CheckTime){
-  if(secondCheck){
-    checkTime = millis();
-    secondCheck = false;
-  }
-  if((checkTime+CheckTime) < millis()){
-    alreadyChecking = false;
-    return 1;
-  }else{
-    return 0;
-  }
-}
+// int checkAgain(int CheckTime){
+//   if(secondCheck){
+//     checkTime = millis();
+//     secondCheck = false;
+//     alreadyChecking = true;
+//   }
+//   if((checkTime+CheckTime) < millis()){
+//     alreadyChecking = false;
+//     return 1;
+//   }else{
+//     return 0;
+//   }
+// }
 // int errorStatus = 0; // 0 = no error, 1 = error detected
 // Funiction to get the average of the sensor based on pre determined number of readings. In this case 3.
 long getAvgReadings(int sensorNo){
@@ -74,23 +80,73 @@ long getAvgReadings(int sensorNo){
 }
 
 
-void updateReadings(){                      
-  zone1S1_Reading = round(getAvgReadings(0));  // Store the reading of the ultrasonic sensor
-  delay(30);                                   // Delay to make sure no interfernce between sensors
-  zone1S2_Reading = round(getAvgReadings(1));
-  delay(30);
-  zone2S1_Reading = round(getAvgReadings(2));
-  delay(30);
-  zone2S2_Reading = round(getAvgReadings(3));
-  delay(30);
-  zone3S1_Reading = round(getAvgReadings(4));
-  delay(30);
-  zone3S2_Reading = round(getAvgReadings(5));
-  delay(30);
-  // Zones Logic
-  zone1NoPen = (zone1S1_Reading == 0 && zone1S2_Reading == 0);  // Logic where no penetration is detected if no reading from parallel sensors 
-  zone2NoPen = (zone2S1_Reading == 0 && zone2S2_Reading == 0);
-  zone3NoPen = (zone3S1_Reading == 0 && zone3S2_Reading == 0);
+// void updateReadings(){                      
+//   zone1S1_Reading = round(getAvgReadings(0));  // Store the reading of the ultrasonic sensor
+//   delay(30);                                   // Delay to make sure no interfernce between sensors
+//   zone1S2_Reading = round(getAvgReadings(1));
+//   delay(30);
+//   zone2S1_Reading = round(getAvgReadings(2));
+//   delay(30);
+//   zone2S2_Reading = round(getAvgReadings(3));
+//   delay(30);
+//   zone3S1_Reading = round(getAvgReadings(4));
+//   delay(30);
+//   zone3S2_Reading = round(getAvgReadings(5));
+//   delay(30);
+//   // Zones Logic
+//   zone1NoPen = (zone1S1_Reading == 0 && zone1S2_Reading == 0);  // Logic where no penetration is detected if no reading from parallel sensors 
+//   zone2NoPen = (zone2S1_Reading == 0 && zone2S2_Reading == 0);
+//   zone3NoPen = (zone3S1_Reading == 0 && zone3S2_Reading == 0);
+// }
+void showReadings(){
+  Serial.print("L1=");
+  Serial.print(zone1S1_Reading);
+  Serial.print("R1=");
+  Serial.print(zone1S2_Reading);
+  Serial.print("L2=");
+  Serial.print(zone2S1_Reading);
+  Serial.print("R2=");
+  Serial.print(zone2S2_Reading);
+  Serial.print("L3=");
+  Serial.print(zone3S1_Reading);
+  Serial.print("R3=");
+  Serial.print(zone3S2_Reading);
+  Serial.print(".");
+  Serial.println();
+
+}
+
+void updateReadingsParallel (void * parameters){      
+  while(1){          
+    xSemaphoreTake(readWritePennMutex, portMAX_DELAY);     
+    zone1S1_Reading = round(getAvgReadings(0));  // Store the reading of the ultrasonic sensor
+    delay(30);                                   // Delay to make sure no interfernce between sensors
+    zone1S2_Reading = round(getAvgReadings(1));
+    delay(30);
+    zone2S1_Reading = round(getAvgReadings(2));
+    delay(30);
+    zone2S2_Reading = round(getAvgReadings(3));
+    delay(30);
+    zone3S1_Reading = round(getAvgReadings(4));
+    delay(30);
+    zone3S2_Reading = round(getAvgReadings(5));
+    delay(30);
+    // Zones Logic
+    zone1NoPen = (zone1S1_Reading == 0 && zone1S2_Reading == 0);  // Logic where no penetration is detected if no reading from parallel sensors 
+    zone2NoPen = (zone2S1_Reading == 0 && zone2S2_Reading == 0);
+    zone3NoPen = (zone3S1_Reading == 0 && zone3S2_Reading == 0);
+    xSemaphoreGive(readWritePennMutex);
+    showReadings();
+  }
+}
+void mQttTaskParallel(void * parameters){
+  while(1){
+    xSemaphoreTake(errorPinMutex, portMAX_DELAY); 
+    xSemaphoreTake(modeWRMutex, portMAX_DELAY); 
+    mqttClient.loop();
+    xSemaphoreGive(errorPinMutex);
+    xSemaphoreGive(modeWRMutex);
+  }
 }
 // void showReadings(){
 //   Serial.print(0);
@@ -115,52 +171,45 @@ void updateReadings(){
 
 // }
 
-void showReadings(){
-  Serial.print("L1=");
-  Serial.print(zone1S1_Reading);
-  Serial.print("R1=");
-  Serial.print(zone1S2_Reading);
-  Serial.print("L2=");
-  Serial.print(zone2S1_Reading);
-  Serial.print("R2=");
-  Serial.print(zone2S2_Reading);
-  Serial.print("L3=");
-  Serial.print(zone3S1_Reading);
-  Serial.print("R3=");
-  Serial.print(zone3S2_Reading);
-  Serial.print(".");
-  Serial.println();
-
-}
 
 void normalMode(){
   while(true){
-    mqttClient.loop();
     Serial.print("error status = ");
     Serial.println(errorStatus);
-    updateReadings();
-    showReadings() ;
     Serial.print("mode is: ");
     Serial.println(mode);
+    xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
     if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
-      if(checkAgain(delayCheck)){
-        if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
-          if(!errorStatus){
-            //publish mqtt
-            Serial.println("mqtt published");
-            errorStatus = 1;
-            publishMqtt(1);
-          }
+      xSemaphoreGive(readWritePennMutex);
+      vTaskDelay(checkAgainDelayMs / portTICK_PERIOD_MS);
+      xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
+      if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
+        xSemaphoreGive(readWritePennMutex);
+        if(!errorStatus){
+          //publish mqtt
+          xSemaphoreTake(errorPinMutex, portMAX_DELAY);
+          errorStatus = 1;
+          xSemaphoreGive(errorPinMutex);
+          
+          publishMqtt(1);
+          Serial.println("mqtt published");
         }
-        secondCheck = true;
       }
-    } else{
-        secondCheck = true;
-    }  
-    if(mode != 1){
-    break;  
+      else{
+        xSemaphoreGive(readWritePennMutex);
+      }
     }
+    else{
+      xSemaphoreGive(readWritePennMutex);
+    }
+    xSemaphoreTake(modeWRMutex, portMAX_DELAY);
+    if(mode != 1){
+      xSemaphoreGive(modeWRMutex);
+      break;  
+    }
+    xSemaphoreGive(modeWRMutex);
   }
+}
   // while(true){
   //   updateReadings();
   //   showReadings();
@@ -190,7 +239,7 @@ void normalMode(){
   //     break;
   //   }
   // }
-}
+// }
 
 void scaleMode(){
   while(true){
@@ -198,111 +247,120 @@ void scaleMode(){
     Serial.println(errorStatus);
     Serial.print("mode is: ");
     Serial.println(mode);
-    mqttClient.loop();
-    updateReadings();
-    showReadings() ;
+    xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
     if(!zone2NoPen || !zone3NoPen){
-      if(checkAgain(delayCheck)){
-        if(!zone2NoPen || !zone3NoPen){
-          if(!errorStatus){
-            //publish mqtt
-            errorStatus = 1;
-            publishMqtt(1);
-            
-          }
+      xSemaphoreGive(readWritePennMutex);
+      vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS);
+      xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
+      if(!zone2NoPen || !zone3NoPen){
+        xSemaphoreGive(readWritePennMutex);
+        if(!errorStatus){
+          //publish mqtt
+          xSemaphoreTake(errorPinMutex, portMAX_DELAY);
+          errorStatus = 1;
+          xSemaphoreGive(errorPinMutex);
+          publishMqtt(1);
+          
         }
-        secondCheck = true;
+      } else{
+        xSemaphoreGive(readWritePennMutex);
       }
     } else{
-        secondCheck = true;
-    }  
-    if(mode != 2){
-    break;  
+        xSemaphoreGive(readWritePennMutex);
     }
+
+    xSemaphoreTake(modeWRMutex, portMAX_DELAY);
+    if(mode != 2){
+      xSemaphoreGive(modeWRMutex); 
+      break;  
+    }
+    xSemaphoreGive(modeWRMutex);
   }
+
 }
 
 void removeItem(){
  
   while(true){
-      mqttClient.loop();
-      Serial.print("error status = ");
-      Serial.println(errorStatus);
-      Serial.print("mode is: ");
-      Serial.println(mode);
-      updateReadings();
-      showReadings() ;
+    Serial.print("error status = ");
+    Serial.println(errorStatus);
+    Serial.print("mode is: ");
+    Serial.println(mode);
+    xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
     if((!zone1NoPen || !zone2NoPen || !zone3NoPen)){
-    Serial.print(" in if ");
+      xSemaphoreGive(readWritePennMutex);
+      Serial.print(" in if ");
       while(true){
         Serial.print("in second loop ");
-        mqttClient.loop();
         Serial.print("error status = ");
         Serial.println(errorStatus);
         Serial.print("mode is: ");
         Serial.println(mode);
-        updateReadings();
-        showReadings() ;
+        xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
         if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
-          alreadyChecking = true;
-          if(checkAgain(delayCheck)){
-            Serial.println("fail 2 penn 2");
-            if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
-              Serial.println("fail 2 pen 3"); 
-              if(!errorStatus){
-                //publish mqtt
-                Serial.println("fail 2 penn");
-                errorStatus = 1;
-                publishMqtt(1);
-              }
+          xSemaphoreGive(readWritePennMutex);
+          Serial.println("fail 2 penn 2");
+          vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS);
+          xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
+          if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+            xSemaphoreGive(readWritePennMutex);
+            Serial.println("fail 2 pen 3"); 
+            if(!errorStatus){
+              //publish mqtt
+              Serial.println("fail 2 penn");
+              xSemaphoreTake(errorPinMutex, portMAX_DELAY);
+              errorStatus = 1;
+              xSemaphoreGive(errorPinMutex);
+              publishMqtt(1);
             }
-            secondCheck = true;
+          } else {
+            xSemaphoreGive(readWritePennMutex);
           }
-        } else{
-          if(!alreadyChecking){
-            secondCheck = true;
-          }
+        } else {
+             xSemaphoreGive(readWritePennMutex);
         }
+
+        xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
         if(zone1NoPen && zone2NoPen && zone3NoPen){
-          alreadyChecking = true;
+          xSemaphoreGive(readWritePennMutex);
           Serial.println("fail no penn 1"); 
-          if(checkAgain(1300)){
-            Serial.println("fail no penn 2"); 
-            if(zone1NoPen && zone2NoPen && zone3NoPen){
-              Serial.println("fail no pen 3"); 
-              if(!errorStatus){
-                Serial.println("fail no penn");
-                errorStatus = 1;
-                publishMqtt(1);
-              }
+          vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS); 
+          xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
+          if(zone1NoPen && zone2NoPen && zone3NoPen){
+            xSemaphoreGive(readWritePennMutex);
+            Serial.println("fail no pen 2"); 
+            if(!errorStatus){
+              Serial.println("fail no penn");
+              xSemaphoreTake(errorPinMutex, portMAX_DELAY);
+              errorStatus = 1;
+              xSemaphoreGive(errorPinMutex);
+              publishMqtt(1);
             }
-            secondCheck = true;
-          }
+          } else {
+            xSemaphoreGive(readWritePennMutex);
+          }   
         } else{
-            if(!alreadyChecking){
-            secondCheck = true;
-          }
+          xSemaphoreGive(readWritePennMutex);
         }
-        
+        xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
         if(!zone1NoPen && zone2NoPen && zone3NoPen){
-          alreadyChecking = true;
+          xSemaphoreGive(readWritePennMutex);
           Serial.println("Sucess 1"); 
-          if(checkAgain(delayCheck)){
-            Serial.println("Sucess 2"); 
-            if(!zone1NoPen && zone2NoPen && zone3NoPen){
-              if(!errorStatus){
-              Serial.println("sucess remove");
-                publishMqtt(0, 1);
-                Serial.println("Removing success MQTT sent");
-                break;
-              }
+          vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS);
+          xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
+          if(!zone1NoPen && zone2NoPen && zone3NoPen){
+            xSemaphoreGive(readWritePennMutex);
+            if(!errorStatus){
+            Serial.println("sucess remove");
+              publishMqtt(0, 1);
+              Serial.println("Removing success MQTT sent");
+              break;
             }
-            secondCheck = true;
+          } else {
+            xSemaphoreGive(readWritePennMutex);
           }
         } else{
-          if(!alreadyChecking){
-            secondCheck = true;
-          }
+          xSemaphoreGive(readWritePennMutex);
         }
         // if(zone1NoPen && zone2NoPen && zone3NoPen){
         //   // publish mqtt success
@@ -310,15 +368,22 @@ void removeItem(){
         //   mode = 0;
         //   break;
         // }
+          xSemaphoreTake(modeWRMutex, portMAX_DELAY);
           if(mode != 4){
-           break;  
+            xSemaphoreGive(modeWRMutex);
+            break;  
           }
+          xSemaphoreGive(modeWRMutex);
         }
+      } else{
+        xSemaphoreGive(readWritePennMutex);
       }
+          xSemaphoreTake(modeWRMutex, portMAX_DELAY);
       if(mode != 4){
-      break;  
-    }
-
+        xSemaphoreGive(modeWRMutex);
+        break;  
+      }
+      xSemaphoreGive(modeWRMutex);
   }
   // while(true){
   //   updateReadings();
@@ -344,41 +409,48 @@ void removeItem(){
 
 void movingMode(){
   while(true){
-    mqttClient.loop();
     Serial.print("error status = ");
     Serial.println(errorStatus);
     Serial.print("mode is: ");
     Serial.println(mode);
-    updateReadings();
-    showReadings() ;
+    xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
     if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
-      if(checkAgain(delayCheck)){
+        xSemaphoreGive(readWritePennMutex);
+        vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS);
+        xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
         if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
+          xSemaphoreGive(readWritePennMutex);
           if(!errorStatus){
             //publish mqtt
             Serial.println("fail 2 penn");
+            xSemaphoreTake(errorPinMutex, portMAX_DELAY);
             errorStatus = 1;
+            xSemaphoreGive(errorPinMutex);
             publishMqtt(1, 0);
           }
+        } else{
+          xSemaphoreGive(readWritePennMutex);
         }
-        secondCheck = true;
-      }
     } else{
-        secondCheck = true;
+      xSemaphoreGive(readWritePennMutex);
     }  
 
+    xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
     if(zone1NoPen && zone2NoPen && zone3NoPen){
-      if(checkAgain(delayCheck)){
+      xSemaphoreGive(readWritePennMutex);
+      vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS);
+      xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
         if(zone1NoPen && zone2NoPen && zone3NoPen){
+          xSemaphoreGive(readWritePennMutex);
           Serial.println("Sucess");
           publishMqtt(0);
           mode = 0;
           break;
+        } else{
+          xSemaphoreGive(readWritePennMutex);
         }
-        secondCheck = true;
-      }
     } else{
-        secondCheck = true;
+      xSemaphoreGive(readWritePennMutex);
     }
     // if(zone1NoPen && zone2NoPen && zone3NoPen){
     //   // publish mqtt success
@@ -386,9 +458,13 @@ void movingMode(){
     //   mode = 0;
     //   break;
     // }s
+
+    xSemaphoreTake(modeWRMutex, portMAX_DELAY);
     if(mode != 3){
+    xSemaphoreGive(modeWRMutex);
     break;  
     }
+    xSemaphoreGive(modeWRMutex);
   }
   // while(true){
   //       updateReadings();
@@ -427,38 +503,48 @@ void setup() {
   wifiSetup();
   mqttSetup();
   mode =0;
+  readWritePennMutex = xSemaphoreCreateMutex();
+  errorPinMutex = xSemaphoreCreateMutex();
+  modeWRMutex = xSemaphoreCreateMutex();
+
   delay(75);
 }
 
 void loop() {
-  mqttClient.loop();
-  updateReadings();
-  showReadings() ;
   Serial.print("Mode is: ");
   Serial.println(mode);
+  xSemaphoreTake(modeWRMutex, portMAX_DELAY); 
   switch (mode)
   {
   case 0:
+    xSemaphoreGive(modeWRMutex);
     break;
   case 1:
+    xSemaphoreGive(modeWRMutex);
     Serial.print("Mode is: ");
     Serial.println(mode);
     normalMode();
     break;
   case 2:
+    xSemaphoreGive(modeWRMutex);
     Serial.print("Mode is: ");
     Serial.println(mode);
     scaleMode();
     break;
   case 3:
+    xSemaphoreGive(modeWRMutex);
     Serial.print("Mode is: ");
     Serial.println(mode);
     movingMode();
     break;
   case 4:
+    xSemaphoreGive(modeWRMutex);
     Serial.print("Mode is: ");
     Serial.println(mode);
     removeItem();
+    break;
+  default:
+    xSemaphoreGive(modeWRMutex);
     break;
   }
 }
