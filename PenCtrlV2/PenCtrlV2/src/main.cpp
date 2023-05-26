@@ -1,8 +1,8 @@
 #include <Arduino.h>
-#include <NewPing.h>
 #include "main.h"
 #include "wifi/wifi.h"
 #include "mqtt/mqtt.h"
+#include "ultraSonic/ultraSonic.h"
 
 // char cartToken[63] = "/cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco";
 #define SONAR_NUM 6      // Number of sensors.
@@ -15,6 +15,7 @@
 #define releasePin 15
 #define checkAgainDelayMs 1000
 
+
 // long delayCheck = 650;
 // bool secondCheck = true;
 // long checkTime = millis();
@@ -24,29 +25,28 @@
  SemaphoreHandle_t errorPinMutex;
  SemaphoreHandle_t modeWRMutex;
 
-NewPing sonar[SONAR_NUM] = {   // Sensor object array
+Sensor sonar[SONAR_NUM] = {   // Sensor object array
   // Each sensor's trigger pin, echo pin, and max distance to ping
-  NewPing(oddPin, 19, MAX_DISTANCE), 
-  NewPing(evenPin, 14, MAX_DISTANCE),
-  NewPing(oddPin, 18, MAX_DISTANCE), 
-  NewPing(evenPin, 12, MAX_DISTANCE),
-  NewPing(oddPin, 5, MAX_DISTANCE), 
-  NewPing(evenPin, 13, MAX_DISTANCE),
+  createSensor(oddPin, 19, MAX_DISTANCE), 
+  createSensor(evenPin, 14, MAX_DISTANCE),
+  createSensor(oddPin, 18, MAX_DISTANCE), 
+  createSensor(evenPin, 12, MAX_DISTANCE),
+  createSensor(oddPin, 5, MAX_DISTANCE), 
+  createSensor(evenPin, 13, MAX_DISTANCE),
 };
 
 // Zone Reading variables
-long zone1S1_Reading = sonar[0].ping_cm(); 
-long zone1S2_Reading = sonar[1].ping_cm();
-long zone2S1_Reading = sonar[2].ping_cm();
-long zone2S2_Reading = sonar[3].ping_cm();
-long zone3S1_Reading = sonar[4].ping_cm();
-long zone3S2_Reading = sonar[5].ping_cm();
+long zone1S1_Reading; 
+long zone1S2_Reading;
+long zone2S1_Reading;
+long zone2S2_Reading;
+long zone3S1_Reading;
+long zone3S2_Reading;
 
 // Zones Logic
-boolean zone1NoPen = (zone1S1_Reading == 0 && zone1S2_Reading == 0);  // Logic where no penetration is detected if no reading from parallel sensors 
-boolean zone2NoPen = (zone2S1_Reading == 0 && zone2S2_Reading == 0);
-boolean zone3NoPen = (zone3S1_Reading == 0 && zone3S2_Reading == 0);
-boolean nextZone = false;
+boolean zone1NoPen;  // Logic where no penetration is detected if no reading from parallel sensors 
+boolean zone2NoPen;
+boolean zone3NoPen;
 
 // confirms penetration
 
@@ -65,19 +65,19 @@ boolean nextZone = false;
 // }
 // int errorStatus = 0; // 0 = no error, 1 = error detected
 // Funiction to get the average of the sensor based on pre determined number of readings. In this case 3.
-long getAvgReadings(int sensorNo){
-  long sensorAvg = 0;                     // Varaoble of the average
-  int i = 0;                              // Variable for iteration
-  while(i<avgQuantity){
-    if(sonar[sensorNo].ping_cm() == 0) {  // Case where reading is 0
-      sensorAvg = 0;
-      break;
-    }
-    sensorAvg += sonar[sensorNo].ping_cm(); // Add average
-    i++;                                    // Iterate 
-  }
-  return (sensorAvg/avgQuantity);           // Calculate average
-}
+// long getAvgReadings(int sensorNo){
+//   long sensorAvg = 0;                     // Varaoble of the average
+//   int i = 0;                              // Variable for iteration
+//   while(i<avgQuantity){
+//     if(sonar[sensorNo].ping_cm() == 0) {  // Case where reading is 0
+//       sensorAvg = 0;
+//       break;
+//     }
+//     sensorAvg += sonar[sensorNo].ping_cm(); // Add average
+//     i++;                                    // Iterate 
+//   }
+//   return (sensorAvg/avgQuantity);           // Calculate average
+// }
 
 
 // void updateReadings(){                      
@@ -118,19 +118,15 @@ void showReadings(){
 
 void updateReadingsParallel (void * parameters){      
   for(;;){          
-    xSemaphoreTake(readWritePennMutex, portMAX_DELAY);     
-    zone1S1_Reading = round(getAvgReadings(0));  // Store the reading of the ultrasonic sensor
-    delay(30);                                   // Delay to make sure no interfernce between sensors
-    zone1S2_Reading = round(getAvgReadings(1));
-    delay(30);
-    zone2S1_Reading = round(getAvgReadings(2));
-    delay(30);
-    zone2S2_Reading = round(getAvgReadings(3));
-    delay(30);
-    zone3S1_Reading = round(getAvgReadings(4));
-    delay(30);
-    zone3S2_Reading = round(getAvgReadings(5));
-    delay(30);
+    xSemaphoreTake(readWritePennMutex, portMAX_DELAY);  
+
+    zone1S1_Reading = measureAverageDistance(sonar[0]);  // Store the reading of the ultrasonic sensor                                 // Delay to make sure no interfernce between sensors
+    zone1S2_Reading = measureAverageDistance(sonar[1]);
+    zone2S1_Reading = measureAverageDistance(sonar[2]);
+    zone2S2_Reading = measureAverageDistance(sonar[3]);
+    zone3S1_Reading = measureAverageDistance(sonar[4]);
+    zone3S2_Reading = measureAverageDistance(sonar[5]);
+
     // Zones Logic
     zone1NoPen = (zone1S1_Reading == 0 && zone1S2_Reading == 0);  // Logic where no penetration is detected if no reading from parallel sensors 
     zone2NoPen = (zone2S1_Reading == 0 && zone2S2_Reading == 0);
@@ -497,25 +493,6 @@ void movingMode(){
   //     }
 }
 
-void setup() {
-  pinMode(errorPin, OUTPUT);
-  // connect wifit
-  Serial.begin(9600); // Open serial monitor at 115200 baud to see ping results.
-  wifiSetup();
-  mqttSetup();
-  mode =0;
-  readWritePennMutex = xSemaphoreCreateMutex();
-  errorPinMutex = xSemaphoreCreateMutex();
-  modeWRMutex = xSemaphoreCreateMutex();
-  
-  xTaskCreatePinnedToCore(mQttTaskParallel, "MQTT Task", 4096, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(updateReadingsParallel, "Read Sensors Task", 1024, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(MainLoop, "Check for errors Task", 2048, NULL, 1, NULL, 1);
-  
-
-  delay(75);
-}
-
 void MainLoop(void * parameters) {
   for(;;){
     Serial.print("Mode is: ");
@@ -555,4 +532,30 @@ void MainLoop(void * parameters) {
       break;
     }
   }
+}
+
+
+void setup() {
+  pinMode(errorPin, OUTPUT);
+  // connect wifit
+  Serial.begin(9600); // Open serial monitor at 115200 baud to see ping results.
+  wifiSetup();
+  mqttSetup();
+  mode =0;
+  readWritePennMutex = xSemaphoreCreateMutex();
+  errorPinMutex = xSemaphoreCreateMutex();
+  modeWRMutex = xSemaphoreCreateMutex();
+  
+  xTaskCreatePinnedToCore(mQttTaskParallel, "MQTT Task", 4096, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(updateReadingsParallel, "Read Sensors Task", 4096*8, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(MainLoop, "Check for errors Task", 4096*2, NULL, 1, NULL, 1);
+  
+
+  delay(75);
+}
+
+void loop(){
+    //does nothing
+    // neded for code
+
 }

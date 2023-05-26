@@ -1,7 +1,7 @@
 #include "mqtt.h"
 
 // Setup function for mqtt
-const char *BROKER = "192.168.162.66";
+const char *BROKER = "192.168.239.66";
 const int BROKER_PORT = 1883;
 
 // MQTT topics
