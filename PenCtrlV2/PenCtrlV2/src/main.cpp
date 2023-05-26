@@ -117,7 +117,7 @@ void showReadings(){
 }
 
 void updateReadingsParallel (void * parameters){      
-  while(1){          
+  for(;;){          
     xSemaphoreTake(readWritePennMutex, portMAX_DELAY);     
     zone1S1_Reading = round(getAvgReadings(0));  // Store the reading of the ultrasonic sensor
     delay(30);                                   // Delay to make sure no interfernce between sensors
@@ -138,15 +138,17 @@ void updateReadingsParallel (void * parameters){
     xSemaphoreGive(readWritePennMutex);
     showReadings();
   }
+  vTaskDelete(NULL);
 }
 void mQttTaskParallel(void * parameters){
-  while(1){
+  for(;;){
     xSemaphoreTake(errorPinMutex, portMAX_DELAY); 
     xSemaphoreTake(modeWRMutex, portMAX_DELAY); 
     mqttClient.loop();
     xSemaphoreGive(errorPinMutex);
     xSemaphoreGive(modeWRMutex);
   }
+  vTaskDelete(NULL);
 }
 // void showReadings(){
 //   Serial.print(0);
@@ -181,7 +183,7 @@ void normalMode(){
     xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
     if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
       xSemaphoreGive(readWritePennMutex);
-      vTaskDelay(checkAgainDelayMs / portTICK_PERIOD_MS);
+      vTaskDelay((checkAgainDelayMs/portTICK_PERIOD_MS));
       xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
       if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
         xSemaphoreGive(readWritePennMutex);
@@ -250,7 +252,7 @@ void scaleMode(){
     xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
     if(!zone2NoPen || !zone3NoPen){
       xSemaphoreGive(readWritePennMutex);
-      vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS);
+      vTaskDelay((checkAgainDelayMs/portTICK_PERIOD_MS));
       xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
       if(!zone2NoPen || !zone3NoPen){
         xSemaphoreGive(readWritePennMutex);
@@ -280,7 +282,6 @@ void scaleMode(){
 }
 
 void removeItem(){
- 
   while(true){
     Serial.print("error status = ");
     Serial.println(errorStatus);
@@ -300,7 +301,7 @@ void removeItem(){
         if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
           xSemaphoreGive(readWritePennMutex);
           Serial.println("fail 2 penn 2");
-          vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS);
+          vTaskDelay((checkAgainDelayMs/portTICK_PERIOD_MS));
           xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
           if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
             xSemaphoreGive(readWritePennMutex);
@@ -324,7 +325,7 @@ void removeItem(){
         if(zone1NoPen && zone2NoPen && zone3NoPen){
           xSemaphoreGive(readWritePennMutex);
           Serial.println("fail no penn 1"); 
-          vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS); 
+          vTaskDelay((checkAgainDelayMs/portTICK_PERIOD_MS)); 
           xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
           if(zone1NoPen && zone2NoPen && zone3NoPen){
             xSemaphoreGive(readWritePennMutex);
@@ -346,7 +347,7 @@ void removeItem(){
         if(!zone1NoPen && zone2NoPen && zone3NoPen){
           xSemaphoreGive(readWritePennMutex);
           Serial.println("Sucess 1"); 
-          vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS);
+          vTaskDelay((checkAgainDelayMs/portTICK_PERIOD_MS));
           xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
           if(!zone1NoPen && zone2NoPen && zone3NoPen){
             xSemaphoreGive(readWritePennMutex);
@@ -416,7 +417,7 @@ void movingMode(){
     xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
     if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
         xSemaphoreGive(readWritePennMutex);
-        vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS);
+        vTaskDelay((checkAgainDelayMs/portTICK_PERIOD_MS));
         xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
         if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
           xSemaphoreGive(readWritePennMutex);
@@ -438,7 +439,7 @@ void movingMode(){
     xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
     if(zone1NoPen && zone2NoPen && zone3NoPen){
       xSemaphoreGive(readWritePennMutex);
-      vTaskDelay(checkAgainDelayMs/portTICK_PERIOD_MS);
+      vTaskDelay((checkAgainDelayMs/portTICK_PERIOD_MS));
       xSemaphoreTake(readWritePennMutex, portMAX_DELAY);
         if(zone1NoPen && zone2NoPen && zone3NoPen){
           xSemaphoreGive(readWritePennMutex);
@@ -506,45 +507,52 @@ void setup() {
   readWritePennMutex = xSemaphoreCreateMutex();
   errorPinMutex = xSemaphoreCreateMutex();
   modeWRMutex = xSemaphoreCreateMutex();
+  
+  xTaskCreatePinnedToCore(mQttTaskParallel, "MQTT Task", 4096, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(updateReadingsParallel, "Read Sensors Task", 1024, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(MainLoop, "Check for errors Task", 2048, NULL, 1, NULL, 1);
+  
 
   delay(75);
 }
 
-void loop() {
-  Serial.print("Mode is: ");
-  Serial.println(mode);
-  xSemaphoreTake(modeWRMutex, portMAX_DELAY); 
-  switch (mode)
-  {
-  case 0:
-    xSemaphoreGive(modeWRMutex);
-    break;
-  case 1:
-    xSemaphoreGive(modeWRMutex);
+void MainLoop(void * parameters) {
+  for(;;){
     Serial.print("Mode is: ");
     Serial.println(mode);
-    normalMode();
-    break;
-  case 2:
-    xSemaphoreGive(modeWRMutex);
-    Serial.print("Mode is: ");
-    Serial.println(mode);
-    scaleMode();
-    break;
-  case 3:
-    xSemaphoreGive(modeWRMutex);
-    Serial.print("Mode is: ");
-    Serial.println(mode);
-    movingMode();
-    break;
-  case 4:
-    xSemaphoreGive(modeWRMutex);
-    Serial.print("Mode is: ");
-    Serial.println(mode);
-    removeItem();
-    break;
-  default:
-    xSemaphoreGive(modeWRMutex);
-    break;
+    xSemaphoreTake(modeWRMutex, portMAX_DELAY); 
+    switch (mode)
+    {
+    case 0:
+      xSemaphoreGive(modeWRMutex);
+      break;
+    case 1:
+      xSemaphoreGive(modeWRMutex);
+      Serial.print("Mode is: ");
+      Serial.println(mode);
+      normalMode();
+      break;
+    case 2:
+      xSemaphoreGive(modeWRMutex);
+      Serial.print("Mode is: ");
+      Serial.println(mode);
+      scaleMode();
+      break;
+    case 3:
+      xSemaphoreGive(modeWRMutex);
+      Serial.print("Mode is: ");
+      Serial.println(mode);
+      movingMode();
+      break;
+    case 4:
+      xSemaphoreGive(modeWRMutex);
+      Serial.print("Mode is: ");
+      Serial.println(mode);
+      removeItem();
+      break;
+    default:
+      xSemaphoreGive(modeWRMutex);
+      break;
+    }
   }
 }
