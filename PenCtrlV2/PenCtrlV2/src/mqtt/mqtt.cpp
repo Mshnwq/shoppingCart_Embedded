@@ -1,5 +1,8 @@
 #include "mqtt.h"
-
+#include <iostream>
+#include <cstring>
+#include <cstdlib>
+#include <cstring>
 // Setup function for mqtt
 const char *BROKER = "192.168.239.66";
 const int BROKER_PORT = 1883;
@@ -91,6 +94,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       errorStatus = 0;
     }
     if((strcmp(mqtt_type, "request_start_remove_item") == 0)){
+      const char* item_barcode = docBuf["item_barcode"];
       mode = 4; // first stage of remove item penetration
       errorStatus = 0;
     }
@@ -129,6 +133,7 @@ void publishMqtt(int status, int type){
     // type =0; add; type =1 remove;
     if(!status)
       pub["process"] = !type ? "add" : "remove";
+    pub["item_barcode"] = item_barcode;
     pub["sender"] = "cart-slave-1";
     pub["status"] = status;
     // pub["process"] = process;
