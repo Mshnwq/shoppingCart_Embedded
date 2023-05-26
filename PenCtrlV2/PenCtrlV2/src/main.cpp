@@ -15,7 +15,7 @@
 #define releasePin 15
 #define checkAgainDelayMs 1000
 #define delaySuccess 6
-#define delayError 2
+#define delayError 4
 #define delayQuantum 250
 
 
