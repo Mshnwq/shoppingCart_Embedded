@@ -26,9 +26,38 @@ def add_pressed():
         "timestamp": int(time.time()) 
     }
     client.publish(topic, json.dumps(request))
+    
+def start_add_pressed():
+    # Perform action for button 1 press
+    request = {
+        "mqtt_type": "scale_confirmation",
+        "sender": "user-1",
+        "status": "pass",
+        "timestamp": int(time.time()) 
+    }
+    client.publish(topic, json.dumps(request))
+    
+def remove_pressed():
+    # Perform action for button 1 press
+    request = {
+        "mqtt_type": "request_remove_item",
+        "sender": "user-1",
+        "item_barcode": "123",
+        "timestamp": int(time.time()) 
+    }
+    client.publish(topic, json.dumps(request))
+    
+def start_remove_pressed():
+    # Perform action for button 1 press
+    request = {
+        "mqtt_type": "request_start_remove_item",
+        "sender": "user-1",
+        "timestamp": int(time.time()) 
+    }
+    client.publish(topic, json.dumps(request))
 
 def update_pressed(mode: str):
-    requests.post(f'http://192.168.55.66:1111/api/v1/cart/update_status/123/{mode}');
+    requests.post(f'http://192.168.239.66:1111/api/v1/cart/update_status/123/{mode}');
     # Perform action for button 2 press
     # request = {
         # 'mqtt_type': 'update_mode',
@@ -39,10 +68,10 @@ def update_pressed(mode: str):
     # client.publish(topic, json.dumps(request))
 
 # MQTT client setup
-client = mqtt.Client(client_id="user-1")
+client = mqtt.Client(client_id="user-2")
 client.on_connect = on_connect
 client.on_message = on_message
-client.connect("192.168.55.66", port=1883, keepalive=60)
+client.connect("192.168.239.66", port=1883, keepalive=60)
 client.loop_start()
 
 print("Connected to MQTT broker")
@@ -56,7 +85,14 @@ while button != 'q':
     
     if button == 'a':
         add_pressed()
-    elif button in ['-1', '0', '1','2', '3', '4', '5', '6'] :
+    elif button == 'r':
+        remove_pressed()  
+    elif button == 's':
+        start_remove_pressed()
+        #{'mqtt_type': 'penetration_data', 'sender': 'cart-slave-1', 'status': 1}
+    elif button == 'd':
+        start_add_pressed()
+    elif button in ['-1', '0', '1','2', '3', '4', '5', '6', '7'] :
         update_pressed(button)
     else:
         print("Invalid button")
