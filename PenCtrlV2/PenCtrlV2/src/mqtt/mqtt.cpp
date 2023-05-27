@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 // Setup function for mqtt
 const char *BROKER = "192.168.239.66";
 const int BROKER_PORT = 1883;
@@ -95,7 +96,9 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       errorStatus = 0;
     }
     if((strcmp(mqtt_type, "request_start_remove_item") == 0)){
-      barcode = docBuf["item_barcode"];
+      // std::string stdString(docBuf["item_barcode"]);
+      String itemBarcode = docBuf["item_barcode"].as<String>();
+      barcode = itemBarcode.c_str();
       mode = 4; // first stage of remove item penetration
       errorStatus = 0;
     }

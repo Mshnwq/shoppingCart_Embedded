@@ -6,7 +6,7 @@
 
 // char cartToken[63] = "/cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco";
 #define SONAR_NUM 6      // Number of sensors.
-#define MAX_DISTANCE 33 // Maximum distance (in cm)to ping
+#define MAX_DISTANCE 40 // Maximum distance (in cm)to ping
 #define oddPin 16      // Number of sensors.
 #define evenPin 17 // Maximum distance (in cm) to ping
 #define avgQuantity 3
@@ -14,9 +14,9 @@
 #define sucessPin 27
 #define releasePin 15
 #define checkAgainDelayMs 1000
-#define delaySuccess 6
+#define delaySuccess 2
 #define delayError 2
-#define delayQuantum 250
+#define delayQuantum 300
 
 
 long delayCheck = 400;
@@ -31,7 +31,7 @@ long delayCheck = 400;
 NewPing sonar[SONAR_NUM] = {   // Sensor object array
   // Each sensor's trigger pin, echo pin, and max distance to ping
   NewPing(oddPin, 19, MAX_DISTANCE), 
-  NewPing(evenPin, 14, MAX_DISTANCE),
+  NewPing(evenPin, 14, 35),
   NewPing(oddPin, 18, MAX_DISTANCE), 
   NewPing(evenPin, 12, MAX_DISTANCE),
   NewPing(oddPin, 5, MAX_DISTANCE), 
@@ -103,6 +103,7 @@ long getAvgReadings(int sensorNo){
 //   zone3NoPen = (zone3S1_Reading == 0 && zone3S2_Reading == 0);
 // }
 void showReadings(){
+  Serial.print("#");
   Serial.print("L1=");
   Serial.print(zone1S1_Reading);
   Serial.print("R1=");
@@ -176,7 +177,7 @@ void normalMode(){
     Serial.println(errorStatus);
     Serial.print("mode is: ");
     Serial.println(mode);
-    delay(delayQuantum);
+    delay(50);
     updateReadings();
     if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
       // delay(delayCheck);
@@ -364,7 +365,7 @@ void removeItem(){
           out2=0;
         }
 
-        if(out2 == delayError){
+        if(out2 == 3){
               if(!errorStatus){
               Serial.println("fail no penn");
               errorStatus = 1;
@@ -519,7 +520,7 @@ void movingMode(){
     //   mode = 0;
     //   break;
     
-    if(out == delaySuccess) {
+    if(out == 4) {
       Serial.println("Sucess");
           publishMqtt(0);
           mode = 0;

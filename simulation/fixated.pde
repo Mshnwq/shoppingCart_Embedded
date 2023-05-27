@@ -169,7 +169,7 @@ void draw() {
 void serialEvent (Serial myPort) { // starts reading data from the Serial Port
   // reads the data from the Serial Port up to the character '.' and puts it into the String variable "data".
   String data = myPort.readStringUntil('.');
-  
+  if(data.indexOf("#") != -1){
   // extract the data
   indexL1 = data.indexOf("L1="); // find the character and puts it into the variable "indexd3"
   indexR1 = data.indexOf("R1="); // find the character and puts it into the variable "indexd1"
@@ -194,6 +194,7 @@ void serialEvent (Serial myPort) { // starts reading data from the Serial Port
   iDistanceL3 = int(distanceL3);
 
   println(data);
+  }
 }
 
 void drawObject() {
