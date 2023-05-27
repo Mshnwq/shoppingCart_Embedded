@@ -1,6 +1,7 @@
 import paho.mqtt.client as mqtt
 from time import sleep
 import json, time, requests
+import config.env as env
 
 topic = "/cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco"
 
@@ -52,12 +53,13 @@ def start_remove_pressed():
     request = {
         "mqtt_type": "request_start_remove_item",
         "sender": "user-1",
+        "item_barcode": "123",
         "timestamp": int(time.time()) 
     }
     client.publish(topic, json.dumps(request))
 
 def update_pressed(mode: str):
-    requests.post(f'http://192.168.239.66:1111/api/v1/cart/update_status/123/{mode}');
+    requests.post(f'http://{env.URL}:1111/api/v1/cart/update_status/123/{mode}');
     # Perform action for button 2 press
     # request = {
         # 'mqtt_type': 'update_mode',
@@ -68,10 +70,10 @@ def update_pressed(mode: str):
     # client.publish(topic, json.dumps(request))
 
 # MQTT client setup
-client = mqtt.Client(client_id="user-2")
+client = mqtt.Client(client_id="user-test")
 client.on_connect = on_connect
 client.on_message = on_message
-client.connect("192.168.239.66", port=1883, keepalive=60)
+client.connect(host=env.URL, port=1883, keepalive=60)
 client.loop_start()
 
 print("Connected to MQTT broker")
