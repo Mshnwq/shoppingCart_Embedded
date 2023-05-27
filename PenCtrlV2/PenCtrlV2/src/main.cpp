@@ -103,6 +103,7 @@ long getAvgReadings(int sensorNo){
 //   zone3NoPen = (zone3S1_Reading == 0 && zone3S2_Reading == 0);
 // }
 void showReadings(){
+  Serial.print("#");
   Serial.print("L1=");
   Serial.print(zone1S1_Reading);
   Serial.print("R1=");
