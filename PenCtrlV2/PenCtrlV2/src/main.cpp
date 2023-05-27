@@ -177,7 +177,7 @@ void normalMode(){
     Serial.println(errorStatus);
     Serial.print("mode is: ");
     Serial.println(mode);
-    delay(delayQuantum);
+    delay(50);
     updateReadings();
     if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
       // delay(delayCheck);
