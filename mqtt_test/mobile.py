@@ -1,6 +1,8 @@
 import paho.mqtt.client as mqtt
 from time import sleep
 import json, requests
+import config.env as env
+
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
 
@@ -26,10 +28,10 @@ def on_message(client, userdata, message):
 client = mqtt.Client(client_id="mobile1")
 # client.on_connect = on_connect
 client.on_message = on_message
-client.connect("localhost", port=1883, keepalive=60)
+client.connect(host=env.URL, port=1883, keepalive=60)
 client.loop_start()
 print("connected")
-req = requests.get("http://localhost:1111/api/v1/cart/start_cart/lTJqvZc1KeLIR5yHYCkabMdU4evreusC0xyPHagMqnW3I97bM2AhL6fc")
+req = requests.get(f"http://{env.URL}:1111/api/v1/cart/start_cart/lTJqvZc1KeLIR5yHYCkabMdU4evreusC0xyPHagMqnW3I97bM2AhL6fc")
 print("request status: ", req.status_code)
 # start the code by subscribing to channel
 topic = "/cart/lTJqvZc1KeLIR5yHYCkabMdU4evreusC0xyPHagMqnW3I97bM2AhL6fc"

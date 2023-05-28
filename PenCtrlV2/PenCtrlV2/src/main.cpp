@@ -7,8 +7,8 @@
 // char cartToken[63] = "/cart/AN1kVAUYNynaPvk6nmyS3D6a36R42B2R0kQ338rcM7ERqF2O5GrERSco";
 #define SONAR_NUM 6      // Number of sensors.
 #define MAX_DISTANCE 40 // Maximum distance (in cm)to ping
-#define oddPin 16      // Number of sensors.
-#define evenPin 17 // Maximum distance (in cm) to ping
+#define oddPin 17      // Number of sensors.
+#define evenPin 16 // Maximum distance (in cm) to ping
 #define avgQuantity 3
 #define errorPin 26
 #define sucessPin 27
@@ -30,11 +30,11 @@ long delayCheck = 400;
 
 NewPing sonar[SONAR_NUM] = {   // Sensor object array
   // Each sensor's trigger pin, echo pin, and max distance to ping
-  NewPing(oddPin, 19, MAX_DISTANCE), 
+  NewPing(oddPin,  19, MAX_DISTANCE), 
   NewPing(evenPin, 14, 35),
-  NewPing(oddPin, 18, MAX_DISTANCE), 
+  NewPing(oddPin,  18, MAX_DISTANCE), 
   NewPing(evenPin, 12, MAX_DISTANCE),
-  NewPing(oddPin, 5, MAX_DISTANCE), 
+  NewPing(oddPin,  5, MAX_DISTANCE), 
   NewPing(evenPin, 13, MAX_DISTANCE),
 };
 
@@ -177,7 +177,7 @@ void normalMode(){
     Serial.println(errorStatus);
     Serial.print("mode is: ");
     Serial.println(mode);
-    delay(delayQuantum);
+    delay(50);
     updateReadings();
     if(!zone1NoPen || !zone2NoPen || !zone3NoPen){
       // delay(delayCheck);
