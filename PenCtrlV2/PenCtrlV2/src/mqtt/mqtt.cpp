@@ -147,6 +147,6 @@ void publishMqtt(int status, int type){
     serializeJson(pub, jsonString);
     Serial.println(jsonString);
     const char *myChar = jsonString.c_str();
-    mqttClient.publish(TOPIC_PUB, myChar);
+    mqttClient.publish(TOPIC_PUB, myChar, true);
     Serial.println("send pass to mqtt");
 }

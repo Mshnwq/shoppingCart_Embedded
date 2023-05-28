@@ -129,6 +129,35 @@ void sleepESP(void *arameter){
     delay(1000);
   }
 }
+float calculateRatio(float weight){
+  // x/weight = percentage/100
+  if(weight <= 30)
+    return 60*weight/100;
+  if(weight <= 50)
+    return 55*weight/100;
+  if(weight <= 70)
+    return 50*weight/100;
+  if(weight <= 100)
+    return 45*weight/100;
+  if(weight <= 150)
+    return 40*weight/100;
+  if(weight <= 200)
+    return 45*weight/100;
+  if(weight <= 300)
+    return 35*weight/100;
+  if(weight <= 400)
+    return 20*weight/100;
+  if(weight <= 500)
+    return 15*weight/100;
+  if(weight <= 600)
+    return 10*weight/100;
+  if(weight <= 700)
+    return 7*weight/100;
+  if(weight <= 1000)
+    return 5*weight/100;
+  return 3*weight/100;
+    
+}
 void scaleTask(void *pvParameters) {
   // Code for scale task
   StaticJsonDocument<256> receivedDoc;
@@ -193,6 +222,7 @@ void scaleTask(void *pvParameters) {
     Serial.printf("Current scale readings: %.2f \n", avg);
     Serial.printf("Current db_weight: %.2f \n", db_weight);
     Serial.printf("Result: %.2f\n", comp);
+    float ratio = calculateRatio(db_weight);
     if(motionDetected >= 3){
       pub["status"] = "acce_fail";
       // Serialize the JSON object to a string
@@ -202,7 +232,7 @@ void scaleTask(void *pvParameters) {
       mqttClient.publish(TOPIC_PUB, myChar);
       Serial.println("send pass to mqtt");
     }
-    else if(comp <= 15){
+    else if(comp <= ratio){
       // Create a JSON object
        pub["status"] = "pass";
        // Serialize the JSON object to a string
@@ -365,9 +395,9 @@ void setup() {
   Serial.printf("New mode: %d\n", currentMode);
   Serial.printf("boot count : %d\n", bootCount);
   updateMode(0); // set cart mode to Locked
+  scaleSetup(); // scale setup
   wifiSetup(); // connect to wifi
   mpuSetup();
-  scaleSetup(); // scale setup
   // if(bootCount ==1){
   // }
 
@@ -428,7 +458,7 @@ void setup() {
   xQueueScale = xQueueCreate(1, sizeof(StaticJsonDocument<256>));
 
   // xTaskCreatePinnedToCore(pentTask, "penteration sending", 1024, NULL, 1, &penetHandle, 1);
-  xTaskCreatePinnedToCore(reconnect, "WiFiTask", 4096, NULL, 1, NULL, 1);
+  // xTaskCreatePinnedToCore(reconnect, "WiFiTask", 1024*10, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
       mqtt,                // Function to be called
       "Mqtt client",       // Name of task
@@ -476,7 +506,7 @@ void setup() {
       NULL,                // Parameter to pass to function
       1,                   // Task priority (0 to configMAX_PRIORITIES - 1)
       &sleepHandle,        // Task handle
-      1);                  // Run on one core for demo purposes (ESP32 only)
+      0);                  // Run on one core for demo purposes (ESP32 only)
   // xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
   //     mpuTask,             // Function to be called
   //     "accelometer",       // Name of task
