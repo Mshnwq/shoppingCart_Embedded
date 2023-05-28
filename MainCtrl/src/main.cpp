@@ -334,7 +334,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     }
   if (strcmp(mqtt_type, "penetration_data") == 0) {
     int mode = docBuf["status"];
-    updateMode(1)
+    updateMode(1);
   }
     // if (strcmp(mqtt_type, "alarm_detection") == 0)
     // {
@@ -349,6 +349,8 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
 //   // Your interrupt handling code here
 // }
 // Create an instance of the SerialDebug library
+
+
 void setup() {
   pinMode(GPIO_NUM_14, INPUT); // interrupt mode input
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_14,0); //1 = High, 0 = Low
@@ -426,6 +428,7 @@ void setup() {
   xQueueScale = xQueueCreate(1, sizeof(StaticJsonDocument<256>));
 
   // xTaskCreatePinnedToCore(pentTask, "penteration sending", 1024, NULL, 1, &penetHandle, 1);
+  xTaskCreatePinnedToCore(reconnect, "WiFiTask", 4096, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore( // Use xTaskCreate() in vanilla FreeRTOS
       mqtt,                // Function to be called
       "Mqtt client",       // Name of task

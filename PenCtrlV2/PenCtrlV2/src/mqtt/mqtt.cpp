@@ -90,6 +90,8 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
     if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0)){
       mode = 3; // moving mode (penetration only one area)
       errorStatus = 0;
+      String itemBarcode = docBuf["item_barcode"].as<String>();
+      barcode = itemBarcode.c_str();
     }
     if ((strcmp(mqtt_type, "response_add_item") == 0) && (strcmp(docBuf["status"], "item_not_found") == 0)){
       mode = 1; // when item was not found set mode back to active
