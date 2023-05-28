@@ -96,7 +96,6 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       errorStatus = 0;
     }
     if((strcmp(mqtt_type, "request_start_remove_item") == 0)){
-      // std::string stdString(docBuf["item_barcode"]);
       String itemBarcode = docBuf["item_barcode"].as<String>();
       barcode = itemBarcode.c_str();
       mode = 4; // first stage of remove item penetration

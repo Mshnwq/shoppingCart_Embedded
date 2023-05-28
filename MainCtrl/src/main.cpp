@@ -332,6 +332,10 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       Serial.println(mode);
       updateMode(mode);
     }
+  if (strcmp(mqtt_type, "penetration_data") == 0) {
+    int mode = docBuf["status"];
+    updateMode(1)
+  }
     // if (strcmp(mqtt_type, "alarm_detection") == 0)
     // {
     //   boolean alarm = docBuf["trigger"];
