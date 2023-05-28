@@ -37,7 +37,6 @@ NewPing sonar[SONAR_NUM] = {   // Sensor object array
   NewPing(oddPin,  5, MAX_DISTANCE), 
   NewPing(evenPin, 13, MAX_DISTANCE),
 };
-
 // Zone Reading variables
 long zone1S1_Reading = sonar[0].ping_cm(); 
 long zone1S2_Reading = sonar[1].ping_cm();
@@ -199,7 +198,7 @@ void normalMode(){
               //publish mqtt
               Serial.println("fail penn");
               errorStatus = 1;
-              publishMqtt(1, 0);
+              publishMqtt(1);
             }
       }
     //   delay(delayCheck);
@@ -283,7 +282,7 @@ void scaleMode(){
             //publish mqtt
             Serial.println("fail 2 penn");
             errorStatus = 1;
-            publishMqtt(1, 0);
+            publishMqtt(1);
           }
         // } else{
         }
@@ -484,14 +483,14 @@ void movingMode(){
     } else {
       in =0;
     }
-      if (in == delayError) {
+      if (in == 3) {
       // updateReadings();
         // if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
           if(!errorStatus){
             //publish mqtt
             Serial.println("fail 2 penn");
             errorStatus = 1;
-            publishMqtt(1, 0);
+            publishMqtt(1);
           }
         // } else{
         }
@@ -522,8 +521,8 @@ void movingMode(){
     
     if(out == 4) {
       Serial.println("Sucess");
-          publishMqtt(0);
-          mode = 0;
+          publishMqtt(0, 0);
+          mode = 1;
           break;
     }
     if(mode != 3){
