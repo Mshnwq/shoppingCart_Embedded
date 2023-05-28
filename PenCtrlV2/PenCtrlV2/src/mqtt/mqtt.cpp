@@ -87,7 +87,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       mode = 2; // weghing mode status (penetration allowed in weghing area)
       errorStatus = 0;
     }
-    if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0) && (strcmp(docBuf["process"], "remove") == 0)){
+    if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0) && (strcmp(docBuf["process"], "add") == 0)){
       mode = 3; // moving mode (penetration only one area)
       errorStatus = 0;
       String itemBarcode = docBuf["item_barcode"].as<String>();

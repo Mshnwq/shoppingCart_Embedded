@@ -483,7 +483,7 @@ void movingMode(){
     } else {
       in =0;
     }
-      if (in == delayError) {
+      if (in == 3) {
       // updateReadings();
         // if((!zone1NoPen && (!zone2NoPen || !zone3NoPen) || (!zone2NoPen && (!zone1NoPen || !zone3NoPen)) || (!zone3NoPen && (!zone1NoPen || !zone2NoPen)))){
           if(!errorStatus){
