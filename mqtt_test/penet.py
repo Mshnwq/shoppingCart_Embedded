@@ -57,6 +57,15 @@ def start_remove_pressed():
         "timestamp": int(time.time()) 
     }
     client.publish(topic, json.dumps(request))
+    
+def penetration():
+    # Perform action for button 1 press
+    request = {
+        "mqtt_type": "penetration_data",
+        "sender": "cart-slave-1",
+        "status": 0 
+    }
+    client.publish(topic, json.dumps(request))
 
 def update_pressed(mode: str):
     requests.post(f'http://{env.URL}:1111/api/v1/cart/update_status/123/{mode}');
@@ -91,6 +100,8 @@ while button != 'q':
         remove_pressed()  
     elif button == 's':
         start_remove_pressed()
+    elif button == 'p':
+        penetration()
         #{'mqtt_type': 'penetration_data', 'sender': 'cart-slave-1', 'status': 1}
     elif button == 'd':
         start_add_pressed()
