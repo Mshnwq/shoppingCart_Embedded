@@ -18,7 +18,7 @@ def on_message(client, userdata, message):
     except json.decoder.JSONDecodeError:
         print("Message received:", payload)
 
-def add_pressed():
+def request_add_item():
     # Perform action for button 1 press
     request = {
         "mqtt_type": "request_add_item",
@@ -28,55 +28,66 @@ def add_pressed():
     }
     client.publish(topic, json.dumps(request))
     
-def start_add_pressed():
+def scale_confirmation():
     # Perform action for button 1 press
     request = {
         "mqtt_type": "scale_confirmation",
-        "sender": "user-1",
+        "sender": "backend",
         "status": "pass",
         "timestamp": int(time.time()) 
     }
     client.publish(topic, json.dumps(request))
     
-def remove_pressed():
+def request_remove_item():
     # Perform action for button 1 press
     request = {
         "mqtt_type": "request_remove_item",
-        "sender": "user-1",
+        "sender": "user-test",
         "item_barcode": "123",
         "timestamp": int(time.time()) 
     }
     client.publish(topic, json.dumps(request))
     
-def start_remove_pressed():
+def start_remove_item():
     # Perform action for button 1 press
     request = {
         "mqtt_type": "request_start_remove_item",
-        "sender": "user-1",
+        "sender": "user-test",
         "item_barcode": "123",
         "timestamp": int(time.time()) 
     }
     client.publish(topic, json.dumps(request))
     
-def penetration():
+def penetration(status: int):
     # Perform action for button 1 press
     request = {
         "mqtt_type": "penetration_data",
         "sender": "cart-slave-1",
-        "status": 0 
+        "status": status
+    }
+    client.publish(topic, json.dumps(request))
+    
+def response_remove_item(message: str):
+    # Perform action for button 1 press
+    request = {
+        "mqtt_type": "response_remove_item",
+        "sender": "backend",
+        "status": message 
+    }
+    client.publish(topic, json.dumps(request))
+
+def response_add_item(message: str):
+    # Perform action for button 1 press
+    request = {
+        "mqtt_type": "response_add_item",
+        "sender": "backend",
+        "status": message 
     }
     client.publish(topic, json.dumps(request))
 
 def update_pressed(mode: str):
     requests.post(f'http://{env.URL}:1111/api/v1/cart/update_status/123/{mode}');
-    # Perform action for button 2 press
-    # request = {
-        # 'mqtt_type': 'update_mode',
-        # 'sender': 'user-1',
-        # 'mode': mode,
-        # 'timestamp': int(time.time())
-    # }
-    # client.publish(topic, json.dumps(request))
+
 
 # MQTT client setup
 client = mqtt.Client(client_id="user-test")
@@ -95,16 +106,29 @@ while button != 'q':
     button = input("Press button: ")
     
     if button == 'a':
-        add_pressed()
+        request_add_item()
     elif button == 'r':
-        remove_pressed()  
-    elif button == 's':
-        start_remove_pressed()
-    elif button == 'p':
-        penetration()
-        #{'mqtt_type': 'penetration_data', 'sender': 'cart-slave-1', 'status': 1}
+        request_remove_item()  
+    elif button == 'sr':
+        start_remove_item()
+    elif button == 'p1':
+        penetration(1)
+    elif button == 'p0':
+        penetration(0)
+    elif button == 'c':
+        scale_confirmation()
     elif button == 'd':
-        start_add_pressed()
+        response_add_item("success")
+    elif button == 'i':
+        response_remove_item("success")
+    elif button == 'd0':
+        response_add_item("scale_fail")
+    elif button == 'i0':
+        response_remove_item("scale_fail")
+    elif button == 'd1':
+        response_add_item("acce_fail")
+    elif button == 'i1':
+        response_remove_item("idk")
     elif button in ['-1', '0', '1','2', '3', '4', '5', '6', '7'] :
         update_pressed(button)
     else:
