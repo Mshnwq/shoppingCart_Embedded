@@ -14,4 +14,5 @@ extern WiFiClient wifiClient;
 
 boolean wifiSetup();
 void reconnect(void *pvParameters);
+void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
 #endif

@@ -1,8 +1,11 @@
 #include "wifi.h"
 WiFiClient wifiClient;
 boolean wifiSetup(){
+    WiFi.disconnect(true);
+    delay(1000);
+    WiFi.onEvent(WiFiStationDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
-    WiFi.hostname("ESP32"); // Set the device name
+    WiFi.hostname("ESP32scale"); // Set the device name
     unsigned long startTime = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - startTime < 2000)
     {
@@ -32,6 +35,14 @@ void reconnect(void *pvParameters){
     }
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
+}
+
+void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info){
+  Serial.println("Disconnected from WiFi access point");
+  Serial.print("WiFi lost connection. Reason: ");
+  Serial.println(info.wifi_sta_disconnected.reason);
+  Serial.println("Trying to Reconnect");
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
 }
     // boolean wifiSetup()
     // {

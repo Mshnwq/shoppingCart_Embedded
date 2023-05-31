@@ -87,16 +87,17 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
       mode = 2; // weghing mode status (penetration allowed in weghing area)
       errorStatus = 0;
     }
-    if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0)){
+    if((strcmp(mqtt_type, "scale_confirmation") == 0) && (strcmp(docBuf["status"], "pass") == 0) && (strcmp(docBuf["process"], "add") == 0)){
       mode = 3; // moving mode (penetration only one area)
       errorStatus = 0;
+      String itemBarcode = docBuf["item_barcode"].as<String>();
+      barcode = itemBarcode.c_str();
     }
     if ((strcmp(mqtt_type, "response_add_item") == 0) && (strcmp(docBuf["status"], "item_not_found") == 0)){
       mode = 1; // when item was not found set mode back to active
       errorStatus = 0;
     }
     if((strcmp(mqtt_type, "request_start_remove_item") == 0)){
-      // std::string stdString(docBuf["item_barcode"]);
       String itemBarcode = docBuf["item_barcode"].as<String>();
       barcode = itemBarcode.c_str();
       mode = 4; // first stage of remove item penetration
@@ -146,6 +147,6 @@ void publishMqtt(int status, int type){
     serializeJson(pub, jsonString);
     Serial.println(jsonString);
     const char *myChar = jsonString.c_str();
-    mqttClient.publish(TOPIC_PUB, myChar);
+    mqttClient.publish(TOPIC_PUB, myChar, true);
     Serial.println("send pass to mqtt");
 }

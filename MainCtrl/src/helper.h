@@ -17,6 +17,8 @@ extern TaskHandle_t sleepHandle;
 extern QueueHandle_t xQueuePenet;
 extern QueueHandle_t xQueueScale;
 extern time_t workTime;
+const int maxRetries = 5;
+const int retryDelay = 2000;  // Delay in milliseconds between retries
 // const int PIR_PIN = GPIO_NUM_27; // Replace X with the GPIO pin number
 int updateMode(int newMode);
 int getCurrentMode();
